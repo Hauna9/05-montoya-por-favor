@@ -17,6 +17,7 @@ public class OrderService extends MainService<Order> {
     OrderRepository orderRepository;
     @Autowired
     public OrderService(OrderRepository orderRepository) {
+        super(orderRepository);
         this.orderRepository = orderRepository;
     }
 
