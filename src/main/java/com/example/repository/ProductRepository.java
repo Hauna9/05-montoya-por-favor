@@ -11,9 +11,6 @@ import java.util.UUID;
 @SuppressWarnings("rawtypes")
 public class ProductRepository extends MainRepository<Product> {
 
-    public ProductRepository() {
-        super("products.json", Product.class);
-    }
 
     public Product addProduct(Product product) {
         List<Product> products = getProducts();
@@ -23,7 +20,17 @@ public class ProductRepository extends MainRepository<Product> {
     }
 
     public ArrayList<Product> getProducts() {
-        return loadData();
+        return findAll();
+    }
+
+    @Override
+    protected String getDataPath() {
+        return "src/main/java/com.example/data/product.json";
+    }
+
+    @Override
+    protected Class<Product[]> getArrayType() {
+        return Product[].class;
     }
 
     public Product getProductById(UUID productId) {
