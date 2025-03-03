@@ -1,6 +1,7 @@
 package com.example.service;
 import com.scalable.app.model.Product;
 import com.scalable.app.repository.ProductRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -11,8 +12,8 @@ import java.util.UUID;
 @SuppressWarnings("rawtypes")
 public class ProductService extends MainService<Product> {
 
-    private final ProductRepository productRepository;
-
+    ProductRepository productRepository;
+    @Autowired
     public ProductService(ProductRepository productRepository) {
         super(productRepository);
         this.productRepository = productRepository;
