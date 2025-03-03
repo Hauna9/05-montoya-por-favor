@@ -1,8 +1,8 @@
 package com.example.controller;
 
 
-import com.scalable.app.model.Product;
-import com.scalable.app.service.ProductService;
+import com.example.model.Product;
+import com.example.service.ProductService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;

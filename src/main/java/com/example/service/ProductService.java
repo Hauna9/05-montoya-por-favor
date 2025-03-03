@@ -1,6 +1,6 @@
 package com.example.service;
-import com.scalable.app.model.Product;
-import com.scalable.app.repository.ProductRepository;
+import com.example.model.Product;
+import com.example.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

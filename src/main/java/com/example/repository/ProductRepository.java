@@ -1,7 +1,7 @@
 package com.example.repository;
 
 
-import com.scalable.app.model.Product;
+import com.example.model.Product;
 import org.springframework.stereotype.Repository;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,9 +13,9 @@ public class ProductRepository extends MainRepository<Product> {
 
 
     public Product addProduct(Product product) {
-        List<Product> products = getProducts();
+        ArrayList<Product> products = getProducts();
         products.add(product);
-        saveData(products);
+        saveAll(products);
         return product;
     }
 
@@ -41,12 +41,12 @@ public class ProductRepository extends MainRepository<Product> {
     }
 
     public Product updateProduct(UUID productId, String newName, double newPrice) {
-        List<Product> products = getProducts();
+        ArrayList<Product> products = getProducts();
         for (Product product : products) {
             if (product.getId().equals(productId)) {
                 product.setName(newName);
                 product.setPrice(newPrice);
-                saveData(products);
+                saveAll(products);
                 return product;
             }
         }
@@ -54,19 +54,19 @@ public class ProductRepository extends MainRepository<Product> {
     }
 
     public void applyDiscount(double discount, List<UUID> productIds) {
-        List<Product> products = getProducts();
+        ArrayList<Product> products = getProducts();
         for (Product product : products) {
             if (productIds.contains(product.getId())) {
                 double newPrice = product.getPrice() * (1 - (discount / 100));
                 product.setPrice(newPrice);
             }
         }
-        saveData(products);
+        saveAll(products);
     }
 
     public void deleteProductById(UUID productId) {
-        List<Product> products = getProducts();
+        ArrayList<Product> products = getProducts();
         products.removeIf(product -> product.getId().equals(productId));
-        saveData(products);
+        saveAll(products);
     }
 }
