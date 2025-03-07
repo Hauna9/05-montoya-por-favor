@@ -22,6 +22,7 @@ public abstract class MainRepository<T> {
     public MainRepository(){
 
     }
+
     public ArrayList<T> findAll() {
         try {
             File file = new File(getDataPath());
