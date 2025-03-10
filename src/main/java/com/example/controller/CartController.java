@@ -39,16 +39,16 @@ public class CartController {
     }
 
     // 8.3.2.4 Add Product to Cart
-    @PutMapping("/{cartId}/addProduct")
+    @PutMapping("/addProduct/{cartId}")
     public String addProductToCart(@PathVariable UUID cartId, @RequestBody Product product) {
         cartService.addProductToCart(cartId, product);
         return "Product added to cart";
     }
 
     // 8.3.2.5 Delete Cart
-    @DeleteMapping("/{cartId}/delete")
+    @DeleteMapping("/delete/{cartId}")
     public String deleteCartById(@PathVariable UUID cartId) {
         cartService.deleteCartById(cartId);
-        return "Cart deleted";
+        return "Cart deleted successfully";
     }
 }

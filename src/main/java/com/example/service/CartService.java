@@ -23,6 +23,8 @@ public class CartService extends MainService<Cart> {
         this.cartRepository = cartRepository;
     }
 
+
+
     // 7.4.2.1 Add Cart
     public Cart addCart(Cart cart) {
         return cartRepository.addCart(cart);
@@ -31,7 +33,7 @@ public class CartService extends MainService<Cart> {
     // 7.4.2.2 Get All Carts
     public ArrayList<Cart> getCarts() {
         return cartRepository.getCarts();
-    }
+    } //FIXME call getAll from MainService?
 
     // 7.4.2.3 Get a Specific Cart
     public Cart getCartById(UUID cartId) {
@@ -45,9 +47,13 @@ public class CartService extends MainService<Cart> {
     // 7.4.2.4 Get a User’s Cart
     public Cart getCartByUserId(UUID userId) {
         Cart cart = cartRepository.getCartByUserId(userId);
-        if (cart == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cart not found for this user");
+        if (cart == null) { // create cart
+            cart = new Cart(userId, new ArrayList<>());
+            cartRepository.addCart(cart);
+            cartRepository.save(cart);
+
         }
+
         return cart;
     }
 
@@ -63,6 +69,9 @@ public class CartService extends MainService<Cart> {
 
     // 7.4.2.7 Delete the Cart
     public void deleteCartById(UUID cartId) {
-        cartRepository.deleteCartById(cartId);
+        Cart cart = cartRepository.getCartById(cartId);
+        if (cart!= null) {
+            cartRepository.deleteCartById(cartId);
+        }
     }
 }

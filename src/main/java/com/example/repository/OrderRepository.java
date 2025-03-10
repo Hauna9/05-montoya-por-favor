@@ -37,7 +37,7 @@ public class OrderRepository extends MainRepository<Order> {
                 return order;
             }
         }
-        throw new NoSuchElementException("Order with ID " + orderId + " not found.");
+        return null;
     }
 
     public void deleteOrderById(UUID orderId){

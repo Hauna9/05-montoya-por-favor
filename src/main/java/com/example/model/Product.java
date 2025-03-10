@@ -12,8 +12,10 @@ public class Product {
     // Constructors
     public Product() {}
 
-    public Product(UUID id) {
-        this.id = id;
+    public Product(String name, double price) {
+        this.name = name;
+        this.price = price;
+        id=UUID.randomUUID();
     }
 
     public Product(UUID id, String name, double price) {

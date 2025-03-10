@@ -1,4 +1,5 @@
 package com.example.service;
+import com.example.model.Cart;
 import com.example.model.Product;
 import com.example.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,12 +20,14 @@ public class ProductService extends MainService<Product> {
         this.productRepository = productRepository;
     }
 
+
+
     public Product addProduct(Product product) {
         return productRepository.addProduct(product);
     }
 
     public ArrayList<Product> getProducts() {
-        return productRepository.getProducts();
+        return productRepository.getProducts(); //FIXME call getAll from MainService?
     }
 
     public Product getProductById(UUID productId) {
@@ -32,7 +35,11 @@ public class ProductService extends MainService<Product> {
     }
 
     public Product updateProduct(UUID productId, String newName, double newPrice) {
-        return productRepository.updateProduct(productId, newName, newPrice);
+        Product product = productRepository.getProductById(productId);
+        if (product!= null) {
+            return productRepository.updateProduct(productId, newName, newPrice);
+        }
+        return null;
     }
 
     public void applyDiscount(double discount, List<UUID> productIds) {
@@ -40,6 +47,9 @@ public class ProductService extends MainService<Product> {
     }
 
     public void deleteProductById(UUID productId) {
-        productRepository.deleteProductById(productId);
+        Product product = productRepository.getProductById(productId);
+        if (product!= null) {
+            productRepository.deleteProductById(productId);
+        }
     }
 }

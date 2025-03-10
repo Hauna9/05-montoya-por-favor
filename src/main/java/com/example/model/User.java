@@ -24,6 +24,7 @@ public class User {
     public User(String name, List<Order> orders) {
         this.name = name;
         this.orders = orders;
+        id=UUID.randomUUID();
     }
 
 

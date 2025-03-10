@@ -12,6 +12,16 @@ import java.util.UUID;
 public class ProductRepository extends MainRepository<Product> {
 
 
+    @Override
+    protected String getDataPath() {
+        return "src/main/java/com/example/data/products.json";
+    }
+
+    @Override
+    protected Class<Product[]> getArrayType() {
+        return Product[].class;
+    }
+
     public Product addProduct(Product product) {
         ArrayList<Product> products = getProducts();
         products.add(product);
@@ -21,16 +31,6 @@ public class ProductRepository extends MainRepository<Product> {
 
     public ArrayList<Product> getProducts() {
         return findAll();
-    }
-
-    @Override
-    protected String getDataPath() {
-        return "src/main/java/com.example/data/product.json";
-    }
-
-    @Override
-    protected Class<Product[]> getArrayType() {
-        return Product[].class;
     }
 
     public Product getProductById(UUID productId) {

@@ -21,28 +21,30 @@ public class OrderService extends MainService<Order> {
         this.orderRepository = orderRepository;
     }
 
+
+
     public void addOrder(Order order){
         orderRepository.addOrder(order);
     }
 
     public ArrayList<Order> getOrders(){
-        return orderRepository.getOrders();
+        return orderRepository.getOrders(); //FIXME call getAll from MainService?
     }
 
     public Order getOrderById(UUID orderId){
         Order order = orderRepository.getOrderById(orderId);
-        if(order == null){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
-        }
+//        if(order == null){
+//            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+//        }
         return order;
     }
 
     public void deleteOrderById(UUID orderId) throws IllegalArgumentException{
         Order order = orderRepository.getOrderById(orderId);
-        if(order == null){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+        if(order != null){
+            orderRepository.deleteOrderById(orderId);
         }
-        orderRepository.deleteOrderById(orderId);
+
     }
 
 }

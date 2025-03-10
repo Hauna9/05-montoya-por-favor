@@ -14,7 +14,7 @@ public class CartRepository extends MainRepository<Cart> {
 
     @Override
     protected String getDataPath() {
-        return "src/main/java/com/example/data/cart.json";
+        return "src/main/java/com/example/data/carts.json";
     }
 
     @Override
@@ -40,6 +40,7 @@ public class CartRepository extends MainRepository<Cart> {
                 return cart;
             }
         }
+        //FIXME ?
         throw new NoSuchElementException("Cart not found with ID: " + cartId);
     }
 
@@ -50,25 +51,27 @@ public class CartRepository extends MainRepository<Cart> {
                 return cart;
             }
         }
-        throw new NoSuchElementException("Cart not found for User ID: " + userId);
+        return null;
     }
 
     // 6.4.2.5 Add Product to Cart
     public void addProductToCart(UUID cartId, Product product) {
-        ArrayList<Cart> carts = findAll();
-        for (Cart cart : carts) {
-            if (cart.getId().equals(cartId)) {
-                cart.getProducts().add(product);
-                saveAll(carts);
-                return;
-            }
-        }
-        throw new NoSuchElementException("Cart not found with ID: " + cartId);
-    }
+//        ArrayList<Cart> carts = findAll();
+//        for (Cart cart : carts) {
+//            if (cart.getId().equals(cartId)) {
+//                cart.getProducts().add(product);
+//                saveAll(carts);
+//                return;
+//            }
+//        }
+//        throw new NoSuchElementException("Cart not found with ID: " + cartId);
+            Cart cart = getCartById(cartId);
+            cart.getProducts().add(product);
+}
 
     // 6.4.2.6 Delete Product from Cart
     public void deleteProductFromCart(UUID cartId, Product product) {
-        ArrayList<Cart> carts = findAll();
+        ArrayList<Cart> carts = findAll(); //FIXME shouldnt it be List?
         for (Cart cart : carts) {
             if (cart.getId().equals(cartId)) {
                 cart.getProducts().removeIf(p -> p.getId().equals(product.getId()));
@@ -78,6 +81,20 @@ public class CartRepository extends MainRepository<Cart> {
         }
         throw new NoSuchElementException("Cart not found with ID: " + cartId);
     }
+    //UPDATE try this? to return http 200
+
+//    public ResponseEntity<Void> deleteProductFromCart(UUID cartId, Product product) {
+//        ArrayList<Cart> carts = findAll();
+//        for (Cart cart : carts) {
+//            if (cart.getId().equals(cartId)) {
+//                cart.getProducts().removeIf(p -> p.getId().equals(product.getId()));
+//                saveAll(carts);
+//                return new ResponseEntity<>(HttpStatus.OK);
+//            }
+//        }
+//        return new ResponseEntity<>(HttpStatus.OK);
+//    }
+
 
     // 6.4.2.7 Delete the Cart (Using Loop)
     public void deleteCartById(UUID cartId) {

@@ -3,9 +3,7 @@ package com.example.repository;
 import com.example.model.Order;
 import com.example.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Repository;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,18 +42,27 @@ public class UserRepository extends MainRepository<User>{
     }
 
     public User addUser(User user){
-        user.setId(UUID.randomUUID());
+       // user.setId(UUID.randomUUID());
         save(user);
         return user;
     }
 
     public List<Order> getOrdersByUserId(UUID userId){
-        ArrayList<Order> orders = new ArrayList<>();
-        for (Order order : orderRepository.getOrders()) {
-            if(order.getUserId().equals(userId)){
-                orders.add(order);
-            }
-        }
+        List<Order> orders = new ArrayList<>();
+//        System.out.println("User id " + userId);
+//        System.out.println("All user in db" + getUsers().get(0).getId().toString());
+//        //get the user by the userid and check his orders
+        User test = getUserById(userId);
+//        System.out.println("User by id " + test.getId());
+        orders= test.getOrders(); //FIXME issue in array list usage rather than list??
+//        System.out.println("Check orders by user name of first product " + orders.get(0).getProducts().get(0).getName());
+//        System.out.println("All orders in repo" + orderRepository.findAll().toString());
+//        for (Order order : orderRepository.getOrders()) {
+//            if(order.getUserId().equals(userId)){
+//                System.out.println("order user id" + order.getUserId() + "and user id" + userId);
+//                orders.add(order);
+//            }
+//        }
         return orders;
     }
 
@@ -63,7 +70,7 @@ public class UserRepository extends MainRepository<User>{
         User user = getUserById(userId);
         order.setId(UUID.randomUUID());
         order.setUserId(userId);
-        orderRepository.addOrder(order);
+        orderRepository.addOrder(order); //FIXME add stuff to repo overall?
         List<Order> userOrders = user.getOrders();
         userOrders.add(order);
         user.setOrders(userOrders);
@@ -89,7 +96,9 @@ public class UserRepository extends MainRepository<User>{
 
     public void deleteUserById(UUID userId){
         ArrayList<User> users = getUsers();
+
         users.removeIf(user -> user.getId().equals(userId));
+
         saveAll(users);
     }
 
