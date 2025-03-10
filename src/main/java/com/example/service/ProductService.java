@@ -45,7 +45,8 @@ public class ProductService extends MainService<Product> {
     public Product updateProduct(UUID productId, String newName, double newPrice) {
         Product product = productRepository.getProductById(productId);
         if (product== null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found");
+            throw new IllegalArgumentException("Product not found");
+
         }
         return productRepository.updateProduct(productId, newName, newPrice);
     }

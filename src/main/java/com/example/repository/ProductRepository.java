@@ -50,7 +50,7 @@ public class ProductRepository extends MainRepository<Product> {
             if (product.getId().equals(productId)) {
                 product.setName(newName);
                 if(newPrice < 0){
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Price cannot be negative");
+                    throw new IllegalArgumentException( "Price cannot be negative");
                 }
                 product.setPrice(newPrice);
                 saveAll(products);
