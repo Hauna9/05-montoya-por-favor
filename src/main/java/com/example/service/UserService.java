@@ -5,6 +5,7 @@ import com.example.model.Order;
 import com.example.model.Product;
 import com.example.model.User;
 import com.example.repository.CartRepository;
+import com.example.repository.OrderRepository;
 import com.example.repository.ProductRepository;
 import com.example.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,9 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class UserService extends MainService<User>  {
@@ -28,6 +27,8 @@ public class UserService extends MainService<User>  {
         this.userRepository = repository;
     }
 
+    @Autowired
+    OrderRepository orderRepository;
 
 
     public User addUser(User user){
@@ -47,51 +48,48 @@ public class UserService extends MainService<User>  {
 //        return user;
     }
 
-    public List<Order> getOrdersByUserId(UUID userId){
-        return userRepository.getOrdersByUserId(userId);
+    public List<Order> getOrdersByUserId(UUID userId) {
+        try {
+            return userRepository.getOrdersByUserId(userId);
+        } catch (NoSuchElementException e) {
+            return Collections.emptyList(); // Return empty list instead of throwing
+        }
     }
+
 
     @Autowired
     CartService cartService;
     //FIXME make this a cart service not cart repo
-    public void addOrderToUser(UUID userId){
-        //FIXME for the test cases incase no products?
-    //FIXME add checking user exists etc before everything
-        if(userRepository.getUserById(userId) == null){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+
+    public void addOrderToUser(UUID userId) {
+        // Check if user exists
+        User user = getUserById(userId);
+        if (user == null) {
+            throw new NoSuchElementException("User not found");
         }
 
-        //create cart if it doesnt exist
-        if(cartRepository.getCartByUserId(userId) == null){ //FIXME this is handled in getcartbyuserid
-            System.out.println("cart not found");
-            List <Product> products = new ArrayList<>();
-            Cart cart = new Cart(userId,products);
-            cartRepository.addCart(cart);
+        // Ensure the user has a cart
+        Cart cart = cartRepository.getCartByUserId(userId);
+        if (cart == null || cart.getProducts().isEmpty()) {
+            throw new IllegalStateException("User's cart is empty or does not exist");
         }
-        //get the cart by user id
-        Cart cart = cartService.getCartByUserId(userId);
 
-        //get the products from the cart
-        List<Product> products = cart.getProducts();
-        //get the total price of the products
-        double totalPrice = 0;
-        for (Product product : products){
-            totalPrice += product.getPrice();
-        }
-        //create a new order
-        Order order = new Order(userId,totalPrice, products);
+        // Get products from the cart
+        List<Product> products = new ArrayList<>(cart.getProducts());
 
-        //add the order to the user
-        userRepository.addOrderToUser(userId, order);
+        // Calculate total price
+        double totalPrice = products.stream().mapToDouble(Product::getPrice).sum();
 
-//        check cart services keda to retreive products and use it to initialise an order
-//        call the cart by user ID to get the products
-//        initialise an order with total price and the new arraylist (use the prices)
+        // Create and add the new order
+        Order newOrder = new Order(UUID.randomUUID(), userId, totalPrice, products);
+        userRepository.addOrderToUser(userId, newOrder);
 
-
-
-
+        // Empty the cart after order is placed
+        cartRepository.getCartByUserId(userId).getProducts().clear();
     }
+
+
+
 
     public void emptyCart(UUID userId){
         Cart cart = cartService.getCartByUserId(userId);
@@ -121,26 +119,40 @@ public class UserService extends MainService<User>  {
        //check if user exists
         if(userRepository.getUserById(userId) == null){
             System.out.println("User not found");
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+            throw new NoSuchElementException("User not found");
         }
         //check if order exists
         if(userRepository.getOrdersByUserId(userId).isEmpty()){
             System.out.println("No orders found");
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found");
+            throw new NoSuchElementException("Order not found");
         }
+
 
         userRepository.removeOrderFromUser(userId, orderId);
     }
 
-    public void deleteUserById(UUID userId){
-        //ensure it is not null
+
+
+    public void deleteUserById(UUID userId) {
+        // Ensure user exists
         User user = userRepository.getUserById(userId);
-        if (user!=null)
-        {
-            userRepository.deleteUserById(userId);
+
+        // Delete user's orders
+        List<Order> userOrders = userRepository.getOrdersByUserId(userId);
+        for (Order order : userOrders) {
+            orderRepository.deleteOrderById(order.getId());
         }
 
+        // Check if user has a cart and delete it
+        Cart userCart = cartRepository.getCartByUserId(userId);
+        if (userCart != null) {  // ✅ Use a null check if it doesn't return Optional<Cart>
+            cartRepository.deleteCartById(userCart.getId());
+        }
+
+        // Now delete the user
+        userRepository.deleteUserById(userId);
     }
+
 
     //FIXME make this a service
     @Autowired

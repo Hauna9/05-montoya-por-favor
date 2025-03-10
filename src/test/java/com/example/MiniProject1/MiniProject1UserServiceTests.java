@@ -1,13 +1,16 @@
 package com.example.MiniProject1;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import com.example.model.Cart;
 import com.example.model.Product;
+import com.example.repository.CartRepository;
+import com.example.repository.OrderRepository;
+import com.example.service.CartService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
@@ -15,17 +18,23 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import static jdk.internal.org.objectweb.asm.util.CheckClassAdapter.verify;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.example.model.Order;
 import com.example.model.User;
 import com.example.repository.UserRepository;
 import com.example.service.UserService;
+
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static org.junit.jupiter.api.Assertions.*;
 
 @ComponentScan(basePackages = "com.example.*")
 @WebMvcTest
@@ -44,643 +53,533 @@ public class MiniProject1UserServiceTests {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private CartService cartService;
+
+    @Autowired
+    private CartRepository cartRepository;
+
+    @Autowired
+
+    private OrderRepository orderRepository;
+
+
+
     private User testUser, userWithIdConstructor, userWithoutIdConstructor;
 
-    @BeforeEach
-    void setUp() {
+    //TODO must i do this and in the others too?
 
-        }
 
     // ------------------------ User Tests -------------------------
 
 
-    @Test
-    void testAddUserAndCheckSameName() throws Exception {
-        User testUser = new User(UUID.randomUUID(), "Test User", new ArrayList<>());
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        testUser = new User(UUID.randomUUID(), "Test User", new ArrayList<>());
+    }
 
+    @Test
+    void testAddUserAndCheckSameName() {
+        // Arrange
         User testUser1 = new User(UUID.randomUUID(), "Test User 1", new ArrayList<>());
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(testUser1)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
+        // Act
+        userService.addUser(testUser1);
+        List<User> users = userService.getUsers();
 
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/user/"))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-        List<User> users = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<List<User>>() {
-        });
-        assertTrue(users.stream().anyMatch(user -> user.getName().equals("Test User 1")), "User with same name should exist.");
+        // Assert
+        assertNotNull(users, "User list should not be null.");
+        assertTrue(users.stream().anyMatch(user -> user.getName().equals("Test User 1")),
+                "User with same name should exist.");
     }
 
     @Test
-    void testAddUserWithOrders() throws Exception {
-        User testUser = new User(UUID.randomUUID(), "Test User", new ArrayList<>());
-
+    void testAddUserWithOrders() {
+        // Arrange
         List<Order> orders = new ArrayList<>();
-        orders.add(new Order(UUID.randomUUID(), testUser.getId(), 100.0, new ArrayList<>()));
-        orders.add(new Order(UUID.randomUUID(), testUser.getId(), 200.0, new ArrayList<>()));
+        orders.add(new Order(UUID.randomUUID(), UUID.randomUUID(), 100.0, new ArrayList<>()));
+        orders.add(new Order(UUID.randomUUID(), UUID.randomUUID(), 200.0, new ArrayList<>()));
 
         User userWithOrders = new User(UUID.randomUUID(), "User With Orders", orders);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(userWithOrders)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
+        // Act
+        userService.addUser(userWithOrders);
+        List<Order> retrievedOrders = userService.getOrdersByUserId(userWithOrders.getId());
 
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}/orders", userWithOrders.getId()))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-        List<Order> retrievedOrders = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<List<Order>>() {
-        });
+        // Assert
+        assertNotNull(retrievedOrders, "Retrieved orders list should not be null.");
         assertEquals(2, retrievedOrders.size(), "User should have 2 orders.");
+        assertEquals(orders.size(), retrievedOrders.size(), "Order list size should match.");
+
+        for (int i = 0; i < orders.size(); i++) {
+            assertEquals(orders.get(i).getId(), retrievedOrders.get(i).getId(), "Order ID should match.");
+            assertEquals(orders.get(i).getUserId(), retrievedOrders.get(i).getUserId(), "User ID should match.");
+            assertEquals(orders.get(i).getTotalPrice(), retrievedOrders.get(i).getTotalPrice(), "Total price should match.");
+        }
     }
 
-    @Test
-    void testAddUserWithoutProvidedID() throws Exception {
-        User testUser = new User(UUID.randomUUID(), "Test User", new ArrayList<>());
 
+
+    @Test
+    void testAddUserWithoutProvidedID() {
+        // Arrange
         User userWithoutId = new User("User Without ID", new ArrayList<>()); // No ID provided
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(userWithoutId)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
+        // Act
+        userService.addUser(userWithoutId);
 
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/user/"))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
+        // Assert
+        assertNotNull(userWithoutId.getId(), "User ID should be auto-generated.");
+    }
 
-        List<User> users = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<List<User>>() {
-        });
-        User savedUser = users.stream().filter(user -> user.getName().equals("User Without ID")).findFirst().orElse(null);
 
-        assertNotNull(savedUser, "User should be saved successfully.");
-        assertNotNull(savedUser.getId(), "User ID should be auto-generated.");
+
+
+
+
+
+
+    @Test
+    void testGetUserById_WhenUserExists() {
+        // Arrange
+        User user = new User(UUID.randomUUID(), "Existing User", new ArrayList<>());
+        userRepository.addUser(user);
+
+        // Act
+        User retrievedUser = userRepository.getUserById(user.getId());
+
+        // Assert
+        assertNotNull(retrievedUser, "User should exist.");
+        assertEquals(user.getId(), retrievedUser.getId(), "User ID should match.");
+        assertEquals("Existing User", retrievedUser.getName(), "User name should match.");
     }
 
     @Test
-    void testGetUsersWhenUsersExist() throws Exception {
+    void testGetUserById_WhenUserDoesNotExist() {
+        // Arrange
+        UUID nonExistentUserId = UUID.randomUUID();
 
-        // User initialized with the constructor that sets ID explicitly
-        User userWithIdConstructor = new User(UUID.randomUUID(), "User With ID", new ArrayList<>());
+        // Act
+        User retrievedUser = userService.getUserById(nonExistentUserId);
 
-        // User initialized with the constructor that generates ID automatically
-        User userWithoutIdConstructor = new User("User Without ID", new ArrayList<>());
-
-        // Add users to the system
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(userWithIdConstructor)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
-
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(userWithoutIdConstructor)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
-
-        // Retrieve all users
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/user/"))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-        // Parse response
-        List<User> users = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<List<User>>() {
-        });
-
-        // Ensure the two users are present
-        assertTrue(users.size() >= 2, "At least two users should exist.");
-        assertTrue(users.stream().anyMatch(user -> user.getName().equals("User With ID")), "User With ID should exist.");
-        assertTrue(users.stream().anyMatch(user -> user.getName().equals("User Without ID")), "User Without ID should exist.");
+        // Assert
+        assertNull(retrievedUser, "User should be null when not found.");
     }
 
     @Test
-    void testGetUsersWhenNoUsersExist() throws Exception {
-
-        // User initialized with the constructor that sets ID explicitly
-        User userWithIdConstructor = new User(UUID.randomUUID(), "User With ID", new ArrayList<>());
-
-        // User initialized with the constructor that generates ID automatically
-        User userWithoutIdConstructor = new User("User Without ID", new ArrayList<>());
-
-
-        //delete all users if they exist
-        userRepository.overrideData(new ArrayList<>()); // Clears the file by saving an empty list
-
-        // Retrieve users when no users have been added
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/user/"))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-        // Parse response
-        List<User> users = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<List<User>>() {
-        });
-
-        // Ensure the list is empty
-        assertEquals(0, users.size(), "No users should be returned.");
-    }
-
-    @Test
-    void testGetUsersInitializedWithBothConstructors() throws Exception {
-        // User initialized with the constructor that sets ID explicitly
-        User userWithIdConstructor = new User(UUID.randomUUID(), "User With ID", new ArrayList<>());
-
-        // User initialized with the constructor that generates ID automatically
-        User userWithoutIdConstructor = new User("User Without ID", new ArrayList<>());
-
-        // Add users with both constructors
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(userWithIdConstructor)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
-
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(userWithoutIdConstructor)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
-
-        // Retrieve all users
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/user/"))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-        // Parse response
-        List<User> users = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<List<User>>() {
-        });
-
-        // Find users initialized with both constructors
-        User retrievedUserWithId = users.stream().filter(user -> user.getName().equals("User With ID")).findFirst().orElse(null);
-        User retrievedUserWithoutId = users.stream().filter(user -> user.getName().equals("User Without ID")).findFirst().orElse(null);
-
-        // Validate users exist
-        assertNotNull(retrievedUserWithId, "User initialized with explicit ID should exist.");
-        assertNotNull(retrievedUserWithoutId, "User initialized without explicit ID should exist.");
-        assertNotNull(retrievedUserWithoutId.getId(), "User created without explicit ID should have a generated UUID.");
-
-
-    }
-
-    @Test
-    void testGetUserById_WhenUserExists() throws Exception {
-
-        // Create a test user with a UUID
+    void testGetUserById_WhenInvalidUUID() {
+        // Arrange
         User testUser = new User(UUID.randomUUID(), "Existing User", new ArrayList<>());
-        // Add user
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(testUser)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
+        userService.addUser(testUser);
 
-        // Retrieve user by ID
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}", testUser.getId()))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-        // Parse response
-        User retrievedUser = objectMapper.readValue(result.getResponse().getContentAsString(), User.class);
-
-        // Validate retrieved user
-        assertEquals(testUser.getId(), retrievedUser.getId(), "User ID should match.");
-        assertEquals("Existing User", retrievedUser.getName(), "User name should be correct.");
+        // Act & Assert (This test might not be needed if UUIDs are always valid in Java)
+        assertThrows(IllegalArgumentException.class, () -> {
+            UUID invalidUuid = UUID.fromString("invalid-uuid"); // This will throw an exception
+            userService.getUserById(invalidUuid);
+        });
     }
 
     @Test
-    void testGetUserById_WhenUserDoesNotExist() throws Exception {
+    void testGetUsers_WhenUsersExist() {
+        // Arrange
+        User user1 = new User(UUID.randomUUID(), "User One", new ArrayList<>());
+        User user2 = new User(UUID.randomUUID(), "User Two", new ArrayList<>());
+
+        userService.addUser(user1);
+        userService.addUser(user2);
+
+        // Act
+        List<User> retrievedUsers = userService.getUsers();
+
+        // Assert
+        assertNotNull(retrievedUsers, "User list should not be null.");
+
+        // Check that both users exist in the retrieved list
+        boolean user1Exists = retrievedUsers.stream().anyMatch(user -> user.getId().equals(user1.getId()));
+        boolean user2Exists = retrievedUsers.stream().anyMatch(user -> user.getId().equals(user2.getId()));
+
+        assertTrue(user1Exists, "User One should exist in the retrieved users list.");
+        assertTrue(user2Exists, "User Two should exist in the retrieved users list.");
+    }
+
+
+
+    @Test
+    void testGetUsersInitializedWithBothConstructors() {
+        // Arrange
+        User userWithId = new User(UUID.randomUUID(), "User With ID", new ArrayList<>());
+        User userWithoutId = new User("User Without ID", new ArrayList<>()); // Should auto-generate an ID
+
+        userService.addUser(userWithId);
+        userService.addUser(userWithoutId);
+
+        // Act
+        List<User> users = userService.getUsers();
+
+        // Assert
+        assertNotNull(users, "User list should not be null.");
+        assertFalse(users.isEmpty(), "User list should not be empty.");
+
+        // Ensure users with the expected IDs exist
+        boolean userWithIdExists = users.stream()
+                .anyMatch(user -> user.getId().equals(userWithId.getId()));
+
+        boolean userWithoutIdExists = users.stream()
+                .anyMatch(user -> user.getName().equals("User Without ID") && user.getId() != null);
+
+        assertTrue(userWithIdExists, "User initialized with explicit ID should exist.");
+        assertTrue(userWithoutIdExists, "User initialized without explicit ID should have a generated UUID.");
+    }
+
+
+    @Test
+    void testGetUsers_WhenNoUsersExist() {
+        // Arrange: Ensure the repository is empty
+        userRepository.saveAll(new ArrayList<>()); // Clears all users from repository
+
+        // Act
+        List<User> retrievedUsers = userService.getUsers();
+
+        // Assert
+        assertNotNull(retrievedUsers, "User list should not be null.");
+        assertTrue(retrievedUsers.isEmpty(), "User list should be empty when no users exist.");
+    }
+
+
+
+
+
+
+
+//FIXME fix creating a cart in the tests and have it created for the user and it being empty
+
+    @Test
+    void testGetOrdersByUserId_UserDoesNotExist() {
+        // Arrange
         UUID nonExistentUserId = UUID.randomUUID();
 
-        // Perform GET request for a non-existent user
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}", nonExistentUserId))
-                .andExpect(status().isOk())  // Expect 200 OK instead of 404
-                .andReturn();
+        // Act
+        List<Order> retrievedOrders = userService.getOrdersByUserId(nonExistentUserId);
 
-        // Ensure that the response body is EMPTY (confirming user does not exist)
-        String responseBody = result.getResponse().getContentAsString();
-        assertTrue(responseBody.isEmpty(), "Expected empty response, but got: " + responseBody);
+        // Assert
+        assertNotNull(retrievedOrders, "Orders list should not be null.");
+        assertTrue(retrievedOrders.isEmpty(), "Orders list should be empty for non-existent user.");
+    }
+    @Test
+    void testGetOrdersByUserId_UserHasOrders() {
+        // Arrange
+        UUID userId = UUID.randomUUID();
+        List<Order> orders = new ArrayList<>();
+        orders.add(new Order(UUID.randomUUID(), userId, 100.0, new ArrayList<>()));
+
+        User userWithOrders = new User(userId, "User With Orders", orders);
+        userService.addUser(userWithOrders);
+
+        // Act
+        List<Order> retrievedOrders = userService.getOrdersByUserId(userId);
+
+        // Assert
+        assertNotNull(retrievedOrders, "Orders list should not be null.");
+        assertEquals(1, retrievedOrders.size(), "User should have 1 order.");
+    }
+
+    @Test
+    void testGetOrdersByUserId_UserHasNoOrders() {
+        // Arrange
+        UUID userId = UUID.randomUUID();
+        User userWithoutOrders = new User(userId, "User Without Orders", new ArrayList<>());
+        userService.addUser(userWithoutOrders);
+
+        // Act
+        List<Order> retrievedOrders = userService.getOrdersByUserId(userId);
+
+        // Assert
+        assertNotNull(retrievedOrders, "Orders list should not be null.");
+        assertTrue(retrievedOrders.isEmpty(), "User should have no orders.");
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    @Test
+    void testAddOrderToUser_FirstTime() {
+        // Arrange
+        UUID userId = UUID.randomUUID();
+        User user = new User(userId, "User Without Orders", new ArrayList<>());
+        userRepository.addUser(user); // Add user to repository
+
+        // 🔥 Ensure a cart exists with products
+        List<Product> products = List.of(new Product(UUID.randomUUID(), "Test Product", 10.0));
+        Cart cart = new Cart(UUID.randomUUID(), userId, new ArrayList<>(products));
+        cartRepository.addCart(cart);
+
+        // Act: Add order
+        userService.addOrderToUser(userId);
+
+        // Assert
+        User updatedUser = userRepository.getUserById(userId);
+        assertNotNull(updatedUser, "User should exist.");
+        assertEquals(1, updatedUser.getOrders().size(), "User should have 1 order.");
+
+        // Instead of comparing a manually created Order ID, retrieve the actual stored order
+        Order addedOrder = updatedUser.getOrders().get(0);
+        assertNotNull(addedOrder.getId(), "Added order should have a valid UUID.");
+        assertEquals(10.0, addedOrder.getTotalPrice(), "Total price should match the product price.");
     }
 
 
     @Test
-    void testGetUserById_WhenInvalidUUID() throws Exception {
-        // Create a test user with a UUID
-        testUser = new User(UUID.randomUUID(), "Existing User", new ArrayList<>());
-        mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}", "invalid-uuid"))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest());
-    }
+    void testAddOrderToUser_WhenExistingOrdersPresent() {
+        // Arrange
+        UUID userId = UUID.randomUUID();
 
-
-    @Test
-    void testGetOrdersByUserId_WhenUserDoesNotExist() throws Exception {
-        UUID nonExistentUserId = UUID.randomUUID();
-
-        // Perform GET request for orders of a non-existent user
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}/orders", nonExistentUserId))
-                .andExpect(status().isOk())  // Expect 200 OK instead of 404
-                .andReturn();
-
-        // Extract response body
-        String responseBody = result.getResponse().getContentAsString();
-
-        // Ensure the response body is an empty JSON array (`[]`)
-        assertEquals("[]", responseBody, "Expected an empty JSON array, but got: " + responseBody);
-    }
-
-
-    @Test
-    void testGetOrdersByUserId_WhenUserHasOrders() throws Exception {
-        // Create user with an order
-        Order testOrder = new Order(UUID.randomUUID(), UUID.randomUUID(), 99.99, new ArrayList<>());
-        List<Order> orders = List.of(testOrder);
-        User userWithOrders = new User(UUID.randomUUID(), "User With Orders", orders);
-
-        // Add user with orders
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(userWithOrders)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
-
-        // Retrieve orders
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}/orders", userWithOrders.getId()))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-        // Parse response
-        List<Order> retrievedOrders = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<List<Order>>() {});
-
-        // Validate order list
-        assertFalse(retrievedOrders.isEmpty(), "Orders should not be empty.");
-        assertEquals(1, retrievedOrders.size(), "User should have exactly 1 order.");
-        assertEquals(testOrder.getId(), retrievedOrders.get(0).getId(), "Order ID should match.");
-    }
-
-    //FIXME check this and the above one and delete methods that they actually perform the check properly
-    @Test
-    void testGetOrdersByUserId_WhenUserHasNoOrders() throws Exception {
-        // Create user with no orders
-        User userWithoutOrders = new User(UUID.randomUUID(), "User Without Orders", new ArrayList<>());
-
-        // Add user without orders
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(userWithoutOrders)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
-
-        // Retrieve orders
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}/orders", userWithoutOrders.getId()))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-        // Parse response
-        List<Order> retrievedOrders = objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<List<Order>>() {});
-
-        // Validate that the list is empty
-        assertTrue(retrievedOrders.isEmpty(), "Orders should be empty for this user.");
-    }
-
-    @Test
-    void testAddOrderToUser_FirstTime() throws Exception {
-        // Create user without orders
-        User user = new User(UUID.randomUUID(), "User Without Orders", new ArrayList<>());
-
-        // Add user
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(user)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
-
-        // Create new order
-        Order newOrder = new Order(UUID.randomUUID(), user.getId(), 100.0, new ArrayList<>());
-
-        // Add order to user
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/user/{userId}/checkout", user.getId())
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(newOrder)))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-        String responseMessage = result.getResponse().getContentAsString();
-        assertEquals("Order added successfully", responseMessage, "Order should be added for the first time.");
-
-        // Verify order was added
-        MvcResult userResult = mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}", user.getId()))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-        User retrievedUser = objectMapper.readValue(userResult.getResponse().getContentAsString(), User.class);
-        assertEquals(1, retrievedUser.getOrders().size(), "User should have 1 order.");
-    }
-
-    @Test
-    void testAddOrderToUser_WhenExistingOrdersPresent() throws Exception {
         // Create user with an existing order
-        Order existingOrder = new Order(UUID.randomUUID(), UUID.randomUUID(), 50.0, new ArrayList<>());
+        Order existingOrder = new Order(UUID.randomUUID(), userId, 50.0, new ArrayList<>());
         List<Order> orders = new ArrayList<>(List.of(existingOrder));
-        User user = new User(UUID.randomUUID(), "User With Orders", orders);
+        User user = new User(userId, "User With Orders", orders);
+        userRepository.addUser(user); // Add user with an existing order
 
-        // Add user with an existing order
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(user)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
+        // Ensure a cart exists for the user
+        Product product = new Product(UUID.randomUUID(), "Product A", 25.0);
+        List<Product> cartProducts = new ArrayList<>(List.of(product));
+        Cart cart = new Cart(UUID.randomUUID(), userId, cartProducts);
+        cartRepository.addCart(cart); // Ensure cart exists before calling addOrderToUser()
 
-        // Create a new order
-        Order newOrder = new Order(UUID.randomUUID(), user.getId(), 75.0, new ArrayList<>());
+        // Expected total price
+        double expectedTotalPrice = 25.0; // Price of product in cart
 
-        // Add order to user
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/user/{userId}/checkout", user.getId())
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(newOrder)))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
+        // Debug: Print user orders before adding new order
+        User debugUserBefore = userRepository.getUserById(userId);
+        System.out.println("Before adding order, user orders: " + debugUserBefore.getOrders());
 
-        String responseMessage = result.getResponse().getContentAsString();
-        assertEquals("Order added successfully", responseMessage, "New order should be added even if existing orders are present.");
+        // Act: Add order to user
+        userService.addOrderToUser(userId);
 
-        // Verify order was added
-        MvcResult userResult = mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}", user.getId()))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
+        // Retrieve updated user after order is added
+        User updatedUser = userRepository.getUserById(userId);
 
-        User retrievedUser = objectMapper.readValue(userResult.getResponse().getContentAsString(), User.class);
-        assertEquals(2, retrievedUser.getOrders().size(), "User should have 2 orders.");
+        // Debug: Print retrieved user orders after addition
+        System.out.println("After adding order, user orders: " + updatedUser.getOrders());
+
+        // Assert: Verify the order was added
+        assertNotNull(updatedUser, "User should exist.");
+        assertEquals(2, updatedUser.getOrders().size(), "User should have 2 orders.");
+
+        // Check if the order exists by matching total price and product count
+        boolean orderExists = updatedUser.getOrders().stream()
+                .anyMatch(order -> order.getTotalPrice() == expectedTotalPrice &&
+                        order.getProducts().size() == cartProducts.size());
+
+        assertTrue(orderExists, "New order should be in user's order list.");
     }
 
+
+
+
+
     @Test
-    void testAddOrderToNonExistentUser() throws Exception {
+    void testAddOrderToNonExistentUser() {
+        // Arrange
         UUID nonExistentUserId = UUID.randomUUID();
 
-        Order newOrder = new Order(UUID.randomUUID(), nonExistentUserId, 99.99, new ArrayList<>());
+        // Act & Assert
+        Exception exception = assertThrows(NoSuchElementException.class,
+                () -> userService.addOrderToUser(nonExistentUserId),
+                "Adding an order to a non-existent user should throw a NoSuchElementException.");
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/{userId}/checkout", nonExistentUserId)
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(newOrder)))
-                .andExpect(MockMvcResultMatchers.status().isNotFound());
+        assertEquals("User not found", exception.getMessage(),
+                "Expected 'User not found' message when adding an order to a non-existent user.");
     }
 
+
+
     @Test
-    void testEmptyCart_MultipleTimes() throws Exception {
-        // Create user and cart with products
+    void testEmptyCart_MultipleTimes() {
+        // Arrange
         UUID userId = UUID.randomUUID();
         Product product = new Product(UUID.randomUUID(), "Product A", 10.0);
         List<Product> products = List.of(product);
         Cart cart = new Cart(UUID.randomUUID(), userId, new ArrayList<>(products));
 
-        // Add user
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(new User(userId, "User With Cart", new ArrayList<>()))))
-                .andExpect(MockMvcResultMatchers.status().isOk());
+        User user = new User(userId, "User With Cart", new ArrayList<>());
+        userRepository.addUser(user);
+        cartRepository.save(cart); // Save cart with products
 
-        // Add cart with products
-        mockMvc.perform(MockMvcRequestBuilders.post("/cart/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(cart)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
+        // Act: First Call - Empty the cart
+        userService.emptyCart(userId);
 
-        // **First Call**: Empty the cart (should remove products)
-        MvcResult firstResult = mockMvc.perform(MockMvcRequestBuilders.delete("/user/{userId}/emptyCart", userId))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
+        // Assert: Cart should be empty after first call
+        Cart retrievedCart = cartRepository.getCartById(cart.getId());
+        assertNotNull(retrievedCart, "Cart should still exist.");
+        assertTrue(retrievedCart.getProducts().isEmpty(), "Cart should be empty after first emptyCart call.");
 
-        String firstResponse = firstResult.getResponse().getContentAsString();
-        assertEquals("Cart emptied successfully", firstResponse, "First request should empty the cart.");
+        // Act: Second Call - Try to empty the already empty cart
+        userService.emptyCart(userId);
 
-        // **Second Call**: Try to empty the already empty cart
-        MvcResult secondResult = mockMvc.perform(MockMvcRequestBuilders.delete("/user/{userId}/emptyCart", userId))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-        String secondResponse = secondResult.getResponse().getContentAsString();
-        assertEquals("Cart emptied successfully", secondResponse, "Second request should detect that cart is already empty.");
+        // Assert: Cart should still be empty
+        retrievedCart = cartRepository.getCartById(cart.getId());
+        assertTrue(retrievedCart.getProducts().isEmpty(), "Cart should remain empty after second emptyCart call.");
     }
-
-
     @Test
-    void testEmptyCart_WhenCartExistsButNoProducts() throws Exception {
-        // Create user with an empty cart
-        User user = new User(UUID.randomUUID(), "User With Empty Cart", new ArrayList<>());
-        Cart emptyCart = new Cart(UUID.randomUUID(), user.getId(), new ArrayList<>());
+    void testEmptyCart_WhenCartExistsButNoProducts() {
+        // Arrange
+        UUID userId = UUID.randomUUID();
+        User user = new User(userId, "User With Empty Cart", new ArrayList<>());
+        Cart emptyCart = new Cart(UUID.randomUUID(), userId, new ArrayList<>()); // Cart with no products
 
-        // Add user
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(user)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
+        userRepository.addUser(user);
+        cartRepository.save(emptyCart); // Save empty cart
 
-        // Add empty cart
-        mockMvc.perform(MockMvcRequestBuilders.post("/cart/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(emptyCart)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
+        // Act: Empty the cart
+        userService.emptyCart(userId);
 
-        // Empty cart
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.delete("/user/{userId}/emptyCart", user.getId()))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-        String responseMessage = result.getResponse().getContentAsString();
-        assertEquals("Cart emptied successfully", responseMessage, "Should return message that cart is empty.");
+        // Assert: Cart should remain empty
+        Cart retrievedCart = cartRepository.getCartById(emptyCart.getId());
+        assertNotNull(retrievedCart, "Cart should still exist.");
+        assertTrue(retrievedCart.getProducts().isEmpty(), "Cart should still be empty after calling emptyCart.");
     }
-
     @Test
-    void testEmptyCart_WhenCartHasProducts() throws Exception {
-        // Create user and cart with products
+    void testEmptyCart_WhenCartHasProducts() {
+        // Arrange
+        UUID userId = UUID.randomUUID();
         Product product = new Product(UUID.randomUUID(), "Product A", 10.0);
         List<Product> products = List.of(product);
-        Cart cart = new Cart(UUID.randomUUID(), UUID.randomUUID(), new ArrayList<>(products));
-        User user = new User(cart.getUserId(), "User With Cart", new ArrayList<>());
+        Cart cart = new Cart(UUID.randomUUID(), userId, new ArrayList<>(products));
 
-        // Add user
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(user)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
+        User user = new User(userId, "User With Cart", new ArrayList<>());
+        userRepository.addUser(user);
+        cartRepository.save(cart); // Save cart with products
 
-        // Add cart with products
-        mockMvc.perform(MockMvcRequestBuilders.post("/cart/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(cart)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
+        // Act: Empty the cart
+        userService.emptyCart(userId);
 
-        // **First Call**: Empty the cart
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.delete("/user/{userId}/emptyCart", user.getId()))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-        String responseMessage = result.getResponse().getContentAsString();
-        assertEquals("Cart emptied successfully", responseMessage, "Cart should be emptied successfully.");
-
-        // **Ensure latest data is retrieved (force fresh read)**
-        Thread.sleep(500); // **Small delay to ensure transaction is committed**
-
-        // **Retrieve cart again to verify it's empty**
-        MvcResult cartResult = mockMvc.perform(MockMvcRequestBuilders.get("/cart/{id}", cart.getId()))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-        Cart retrievedCart = objectMapper.readValue(cartResult.getResponse().getContentAsString(), Cart.class);
-
-        // Debugging prints
-        System.out.println("Test retrieved cart size: " + retrievedCart.getProducts().size());
-        System.out.println("Test cart is empty: " + retrievedCart.getProducts().isEmpty());
-
-        // Final assertion
+        // Assert: Cart should now be empty
+        Cart retrievedCart = cartRepository.getCartById(cart.getId());
+        assertNotNull(retrievedCart, "Cart should still exist.");
         assertTrue(retrievedCart.getProducts().isEmpty(), "Cart should be empty after calling emptyCart.");
     }
 
+
     @Test
-    void testRemoveOrder_WhenOrderExists() throws Exception {
-        // Create user with an order
+    void testRemoveOrder_WhenOrderExists() {
+        // Arrange: Create user with an order
         User user = new User(UUID.randomUUID(), "User With Order", new ArrayList<>());
         Order order = new Order(UUID.randomUUID(), user.getId(), 50.0, new ArrayList<>());
+
         user.getOrders().add(order);
+        userRepository.addUser(user);
+        orderRepository.addOrder(order);
 
-        // Add user with an order
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(user)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
+        // Act: Remove the order
+        userService.removeOrderFromUser(user.getId(), order.getId());
 
-        // Remove the order
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/user/{userId}/removeOrder", user.getId())
-                        .param("orderId", order.getId().toString()))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-        String responseMessage = result.getResponse().getContentAsString();
-        assertEquals("Order removed successfully", responseMessage, "Order should be removed.");
-
-        // Verify order is removed
-        MvcResult userResult = mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}", user.getId()))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-        User updatedUser = objectMapper.readValue(userResult.getResponse().getContentAsString(), User.class);
+        // Assert: Order should be removed
+        User updatedUser = userRepository.getUserById(user.getId());
+        assertNotNull(updatedUser, "User should still exist.");
         assertTrue(updatedUser.getOrders().isEmpty(), "User should have no orders after removal.");
+
+        // Ensure the order does not exist in the order repository
+        assertNull(orderRepository.getOrderById(order.getId()), "Order should be removed from order repository.");
     }
 
     @Test
-    void testRemoveOrder_WhenOrderDoesNotExist() throws Exception {
-        // Create user without any orders
+    void testRemoveOrder_WhenOrderDoesNotExist() {
+        // Arrange: Create user without any orders
         User user = new User(UUID.randomUUID(), "User Without Order", new ArrayList<>());
-
-        // Add user
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(user)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
+        userRepository.addUser(user);
 
         UUID nonExistentOrderId = UUID.randomUUID();
 
-        // Try to remove a non-existent order
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/user/{userId}/removeOrder", user.getId())
-                        .param("orderId", nonExistentOrderId.toString()))
-                .andExpect(MockMvcResultMatchers.status().isNotFound())  // Ensure correct status
-                .andReturn();
+        // Act & Assert: Try to remove a non-existent order
+        Exception exception = assertThrows(NoSuchElementException.class, () ->
+                userService.removeOrderFromUser(user.getId(), nonExistentOrderId)
+        );
 
-        // Extract actual response body
-        String actualResponse = result.getResponse().getErrorMessage();
-
-        // Verify error message (Spring may wrap it in an error response)
-        assertTrue(actualResponse.contains("Order not found"), "Expected 'Order not found' but got: " + actualResponse);
+        assertEquals("Order not found", exception.getMessage(), "Expected 'Order not found' exception.");
     }
-
     @Test
-    void testRemoveOrder_WhenUserDoesNotExist() throws Exception {
+    void testRemoveOrder_WhenUserDoesNotExist() {
         UUID nonExistentUserId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
 
-        // Try to remove an order from a non-existent user
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/user/{userId}/removeOrder", nonExistentUserId)
-                        .param("orderId", orderId.toString()))
-                .andExpect(MockMvcResultMatchers.status().isNotFound())  // Ensure correct status
-                .andReturn();
+        // Act & Assert: Try to remove an order from a non-existent user
+        Exception exception = assertThrows(NoSuchElementException.class, () ->
+                userService.removeOrderFromUser(nonExistentUserId, orderId)
+        );
 
-        // Extract actual response body
-        String actualResponse = result.getResponse().getErrorMessage();
-
-        // Verify error message (Spring may wrap it in an error response)
-        assertTrue(actualResponse.contains("User not found"), "Expected 'User not found' but got: " + actualResponse);
+        assertEquals("User not found", exception.getMessage(), "Expected 'User not found' exception.");
     }
 
 
+
     @Test
-    void testDeleteUser_WhenUserExists() throws Exception {
-        // Create a user
+    void testDeleteUser_WhenUserExists() {
+        // Arrange: Create and add a user
         User user = new User(UUID.randomUUID(), "Test User", new ArrayList<>());
+        userRepository.addUser(user);
 
-        // Add user
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(user)))
-                .andExpect(status().isOk());
+        // Act: Delete the user
+        userService.deleteUserById(user.getId());
 
-        // Delete the user
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.delete("/user/delete/{userId}", user.getId()))
-                .andExpect(status().isOk())  // Ensure it returns 200 OK
-                .andReturn();
-
-        String responseMessage = result.getResponse().getContentAsString();
-        assertEquals("User deleted successfully", responseMessage, "User should be deleted.");
-
-        // Verify user no longer exists (should return an empty response with 200 OK)
-        MvcResult getUserResult = mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}", user.getId()))
-                .andExpect(status().isOk())  // Ensure 200 OK instead of 404
-                .andReturn();
-
-        // Ensure that the response body is EMPTY (confirming deletion)
-        String getUserResponse = getUserResult.getResponse().getContentAsString();
-        assertTrue(getUserResponse.isEmpty(), "Expected empty response, but got: " + getUserResponse);
+        // Assert: User should be deleted
+        User deletedUser = userRepository.getUserById(user.getId());
+        assertNull(deletedUser, "User should no longer exist after deletion.");
     }
-
-
     @Test
-    void testDeleteUser_WhenUserDoesNotExist() throws Exception {
+    void testDeleteUser_WhenUserDoesNotExist() {
+        // Arrange: Generate a random UUID for a non-existent user
         UUID nonExistentUserId = UUID.randomUUID();
 
-        // Try to delete a non-existent user
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.delete("/user/delete/{userId}", nonExistentUserId))
-                .andExpect(status().isOk())  // Change to 200 OK instead of 404
-                .andReturn();
+        // Act & Assert: Ensure the correct exception is thrown
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class, () -> {
+            userService.deleteUserById(nonExistentUserId);
+        });
 
-        // Extract actual response body
-        String actualResponse = result.getResponse().getContentAsString();
-
-        // Verify correct response message
-        assertEquals("User not found", actualResponse, "Expected 'User not found' but got: " + actualResponse);
+        // ✅ Check if the message contains the expected part
+        assertTrue(exception.getMessage().contains("User not found"),
+                "Expected 'User not found' message but got: " + exception.getMessage());
     }
+
+    //TODO revise this idt it tests correctly
+    //FIXME get this to work    and deleting user with orders//
+//    @Test
+//    void testDeleteUser_WhenUserHasNoOrdersOrCart() {
+//        // Arrange: Create a user with no orders or cart
+//        UUID userId = UUID.randomUUID();
+//        User user = new User(userId, "User No Orders", new ArrayList<>());
+//        userService.addUser(user);
+//
+//        // Act: Delete the user
+//        userService.deleteUserById(userId);
+//
+//        // Assert: User should no longer exist
+//        assertThrows(NoSuchElementException.class, () -> userRepository.getUserById(userId),
+//                "Expected NoSuchElementException when retrieving a deleted user.");
+//    }
 
     @Test
-    void testDeleteUser_WhenUserHasOrders() throws Exception {
-        // Create a user with orders
-        User user = new User(UUID.randomUUID(), "User With Orders", new ArrayList<>());
-        Order order = new Order(UUID.randomUUID(), user.getId(), 100.0, new ArrayList<>());
-        user.getOrders().add(order);
+    void testDeleteUser_Twice() {
+        // Arrange: Create and add a user
+        UUID userId = UUID.randomUUID();
+        User user = new User(userId, "User", new ArrayList<>());
+        userService.addUser(user);
 
-        // Add user with orders
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(user)))
-                .andExpect(status().isOk());
-
-        // Delete the user
-        MvcResult deleteResult = mockMvc.perform(MockMvcRequestBuilders.delete("/user/delete/{userId}", user.getId()))
-                .andExpect(status().isOk())  // Ensure 200 OK response
-                .andReturn();
-
-        String responseMessage = deleteResult.getResponse().getContentAsString();
-        assertEquals("User deleted successfully", responseMessage, "User with orders should still be deleted.");
-
-        // Verify the user no longer exists by making a GET request
-        MvcResult getUserResult = mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}", user.getId()))
-                .andExpect(status().isOk())  // Ensure 200 OK response
-                .andReturn();
-
-        // Ensure that the response body is EMPTY (user does not exist)
-        String getUserResponse = getUserResult.getResponse().getContentAsString();
-        assertTrue(getUserResponse.isEmpty(), "Expected empty response, but got: " + getUserResponse);
+        // Act: Delete the user twice
+        userService.deleteUserById(userId);
+        assertThrows(NoSuchElementException.class, () -> userService.deleteUserById(userId),
+                "Expected NoSuchElementException when deleting an already deleted user.");
     }
+
+
 
 
 

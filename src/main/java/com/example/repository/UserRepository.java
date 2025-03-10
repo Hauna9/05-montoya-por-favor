@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @Repository
@@ -46,23 +47,15 @@ public class UserRepository extends MainRepository<User>{
         return user;
     }
 
-    public List<Order> getOrdersByUserId(UUID userId){
-        List<Order> orders = new ArrayList<>();
-//        System.out.println("User id " + userId);
-//        System.out.println("All user in db" + getUsers().get(0).getId().toString());
-//        //get the user by the userid and check his orders
-        User test = getUserById(userId);
-//        System.out.println("User by id " + test.getId());
-        orders= test.getOrders(); //FIXME issue in array list usage rather than list??
-//        System.out.println("Check orders by user name of first product " + orders.get(0).getProducts().get(0).getName());
-//        System.out.println("All orders in repo" + orderRepository.findAll().toString());
-//        for (Order order : orderRepository.getOrders()) {
-//            if(order.getUserId().equals(userId)){
-//                System.out.println("order user id" + order.getUserId() + "and user id" + userId);
-//                orders.add(order);
-//            }
-//        }
-        return orders;
+    public List<Order> getOrdersByUserId(UUID userId) {
+        User user = getUserById(userId);
+
+        // Handle the case where the user doesn't exist
+        if (user == null) {
+            throw new NoSuchElementException("User not found with ID: " + userId);
+        }
+
+        return user.getOrders();
     }
 
     public void addOrderToUser(UUID userId, Order order){

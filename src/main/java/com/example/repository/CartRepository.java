@@ -67,6 +67,7 @@ public class CartRepository extends MainRepository<Cart> {
 //        throw new NoSuchElementException("Cart not found with ID: " + cartId);
             Cart cart = getCartById(cartId);
             cart.getProducts().add(product);
+            save(cart);
 }
 
     // 6.4.2.6 Delete Product from Cart
