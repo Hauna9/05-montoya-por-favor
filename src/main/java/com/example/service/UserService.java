@@ -39,12 +39,12 @@ public class UserService extends MainService<User>  {
     }
 
     public User getUserById(UUID userId){
-        User user = userRepository.getUserById(userId);
-        //FIXME i uncommented the below code so should i comment?
-        if(user == null){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
-        }
-        return user;
+       return  userRepository.getUserById(userId);
+//        //FIXME i uncommented the below code so should i comment?
+//        if(user == null){
+//            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+//        }
+//        return user;
     }
 
     public List<Order> getOrdersByUserId(UUID userId){
@@ -139,10 +139,7 @@ public class UserService extends MainService<User>  {
         {
             userRepository.deleteUserById(userId);
         }
-        else
-        {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
-        }
+
     }
 
     //FIXME make this a service

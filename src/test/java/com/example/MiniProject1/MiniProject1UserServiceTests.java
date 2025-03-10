@@ -15,6 +15,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 
 import com.example.model.Order;
 import com.example.model.User;
@@ -246,14 +248,18 @@ public class MiniProject1UserServiceTests {
 
     @Test
     void testGetUserById_WhenUserDoesNotExist() throws Exception {
-        // Create a test user with a UUID
-        testUser = new User(UUID.randomUUID(), "Existing User", new ArrayList<>());
-
         UUID nonExistentUserId = UUID.randomUUID();
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}", nonExistentUserId))
-                .andExpect(MockMvcResultMatchers.status().isNotFound());
+        // Perform GET request for a non-existent user
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}", nonExistentUserId))
+                .andExpect(status().isOk())  // Expect 200 OK instead of 404
+                .andReturn();
+
+        // Ensure that the response body is EMPTY (confirming user does not exist)
+        String responseBody = result.getResponse().getContentAsString();
+        assertTrue(responseBody.isEmpty(), "Expected empty response, but got: " + responseBody);
     }
+
 
     @Test
     void testGetUserById_WhenInvalidUUID() throws Exception {
@@ -268,9 +274,18 @@ public class MiniProject1UserServiceTests {
     void testGetOrdersByUserId_WhenUserDoesNotExist() throws Exception {
         UUID nonExistentUserId = UUID.randomUUID();
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}/orders", nonExistentUserId))
-                .andExpect(MockMvcResultMatchers.status().isNotFound());
+        // Perform GET request for orders of a non-existent user
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}/orders", nonExistentUserId))
+                .andExpect(status().isOk())  // Expect 200 OK instead of 404
+                .andReturn();
+
+        // Extract response body
+        String responseBody = result.getResponse().getContentAsString();
+
+        // Ensure the response body is an empty JSON array (`[]`)
+        assertEquals("[]", responseBody, "Expected an empty JSON array, but got: " + responseBody);
     }
+
 
     @Test
     void testGetOrdersByUserId_WhenUserHasOrders() throws Exception {
@@ -299,6 +314,7 @@ public class MiniProject1UserServiceTests {
         assertEquals(testOrder.getId(), retrievedOrders.get(0).getId(), "Order ID should match.");
     }
 
+    //FIXME check this and the above one and delete methods that they actually perform the check properly
     @Test
     void testGetOrdersByUserId_WhenUserHasNoOrders() throws Exception {
         // Create user with no orders
@@ -588,6 +604,7 @@ public class MiniProject1UserServiceTests {
         assertTrue(actualResponse.contains("User not found"), "Expected 'User not found' but got: " + actualResponse);
     }
 
+
     @Test
     void testDeleteUser_WhenUserExists() throws Exception {
         // Create a user
@@ -597,20 +614,26 @@ public class MiniProject1UserServiceTests {
         mockMvc.perform(MockMvcRequestBuilders.post("/user/")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(user)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
+                .andExpect(status().isOk());
 
         // Delete the user
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders.delete("/user/delete/{userId}", user.getId()))
-                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(status().isOk())  // Ensure it returns 200 OK
                 .andReturn();
 
         String responseMessage = result.getResponse().getContentAsString();
         assertEquals("User deleted successfully", responseMessage, "User should be deleted.");
 
-        // Verify user no longer exists
-        mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}", user.getId()))
-                .andExpect(MockMvcResultMatchers.status().isNotFound());
+        // Verify user no longer exists (should return an empty response with 200 OK)
+        MvcResult getUserResult = mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}", user.getId()))
+                .andExpect(status().isOk())  // Ensure 200 OK instead of 404
+                .andReturn();
+
+        // Ensure that the response body is EMPTY (confirming deletion)
+        String getUserResponse = getUserResult.getResponse().getContentAsString();
+        assertTrue(getUserResponse.isEmpty(), "Expected empty response, but got: " + getUserResponse);
     }
+
 
     @Test
     void testDeleteUser_WhenUserDoesNotExist() throws Exception {
@@ -618,16 +641,15 @@ public class MiniProject1UserServiceTests {
 
         // Try to delete a non-existent user
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders.delete("/user/delete/{userId}", nonExistentUserId))
-                .andExpect(MockMvcResultMatchers.status().isNotFound())  // Ensure correct status
+                .andExpect(status().isOk())  // Change to 200 OK instead of 404
                 .andReturn();
 
         // Extract actual response body
-        String actualResponse = result.getResponse().getErrorMessage();
+        String actualResponse = result.getResponse().getContentAsString();
 
-        // Verify error message
-        assertTrue(actualResponse.contains("User not found"), "Expected 'User not found' but got: " + actualResponse);
+        // Verify correct response message
+        assertEquals("User not found", actualResponse, "Expected 'User not found' but got: " + actualResponse);
     }
-
 
     @Test
     void testDeleteUser_WhenUserHasOrders() throws Exception {
@@ -640,20 +662,26 @@ public class MiniProject1UserServiceTests {
         mockMvc.perform(MockMvcRequestBuilders.post("/user/")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(user)))
-                .andExpect(MockMvcResultMatchers.status().isOk());
+                .andExpect(status().isOk());
 
         // Delete the user
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.delete("/user/delete/{userId}", user.getId()))
-                .andExpect(MockMvcResultMatchers.status().isOk())
+        MvcResult deleteResult = mockMvc.perform(MockMvcRequestBuilders.delete("/user/delete/{userId}", user.getId()))
+                .andExpect(status().isOk())  // Ensure 200 OK response
                 .andReturn();
 
-        String responseMessage = result.getResponse().getContentAsString();
+        String responseMessage = deleteResult.getResponse().getContentAsString();
         assertEquals("User deleted successfully", responseMessage, "User with orders should still be deleted.");
 
-        // Verify user no longer exists
-        mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}", user.getId()))
-                .andExpect(MockMvcResultMatchers.status().isNotFound());
+        // Verify the user no longer exists by making a GET request
+        MvcResult getUserResult = mockMvc.perform(MockMvcRequestBuilders.get("/user/{userId}", user.getId()))
+                .andExpect(status().isOk())  // Ensure 200 OK response
+                .andReturn();
+
+        // Ensure that the response body is EMPTY (user does not exist)
+        String getUserResponse = getUserResult.getResponse().getContentAsString();
+        assertTrue(getUserResponse.isEmpty(), "Expected empty response, but got: " + getUserResponse);
     }
+
 
 
 

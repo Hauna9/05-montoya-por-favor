@@ -32,13 +32,12 @@ public class UserRepository extends MainRepository<User>{
     }
 
     public User getUserById(UUID userId){
-        ArrayList<User> users = getUsers();
-        for (User user : users) {
-            if(user.getId().equals(userId)){
-                return user;
-            }
-        }
-        return null;
+            return getUsers().stream()
+                    .filter(user -> user.getId().equals(userId))
+                    .findFirst()
+                    .orElse(null);  // Avoid throwing an exception if the user is not found
+
+
     }
 
     public User addUser(User user){

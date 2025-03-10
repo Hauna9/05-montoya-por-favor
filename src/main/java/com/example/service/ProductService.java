@@ -1,9 +1,12 @@
 package com.example.service;
 import com.example.model.Cart;
 import com.example.model.Product;
+import com.example.model.User;
 import com.example.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,15 +34,20 @@ public class ProductService extends MainService<Product> {
     }
 
     public Product getProductById(UUID productId) {
-        return productRepository.getProductById(productId);
+
+        Product product=  productRepository.getProductById(productId);
+        if(product == null){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found");
+        }
+        return product;
     }
 
     public Product updateProduct(UUID productId, String newName, double newPrice) {
         Product product = productRepository.getProductById(productId);
-        if (product!= null) {
-            return productRepository.updateProduct(productId, newName, newPrice);
+        if (product== null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found");
         }
-        return null;
+        return productRepository.updateProduct(productId, newName, newPrice);
     }
 
     public void applyDiscount(double discount, List<UUID> productIds) {
@@ -50,6 +58,11 @@ public class ProductService extends MainService<Product> {
         Product product = productRepository.getProductById(productId);
         if (product!= null) {
             productRepository.deleteProductById(productId);
+        }
+
+        else
+        {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found");
         }
     }
 }

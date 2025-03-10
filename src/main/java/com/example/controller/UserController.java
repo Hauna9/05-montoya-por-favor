@@ -8,6 +8,7 @@ import com.example.service.CartService;
 import com.example.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -78,9 +79,8 @@ if(userService.getUserById(userId) != null) {
             userService.deleteUserById(userId);
             return "User deleted successfully";
         } else {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+    return "User not found";  // Change 404 to 200 with a response message
         }
-
 
     }
 

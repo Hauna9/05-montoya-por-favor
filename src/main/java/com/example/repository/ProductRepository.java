@@ -2,7 +2,11 @@ package com.example.repository;
 
 
 import com.example.model.Product;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Repository;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -45,6 +49,9 @@ public class ProductRepository extends MainRepository<Product> {
         for (Product product : products) {
             if (product.getId().equals(productId)) {
                 product.setName(newName);
+                if(newPrice < 0){
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Price cannot be negative");
+                }
                 product.setPrice(newPrice);
                 saveAll(products);
                 return product;
@@ -53,15 +60,26 @@ public class ProductRepository extends MainRepository<Product> {
         return null;
     }
 
-    public void applyDiscount(double discount, List<UUID> productIds) {
+    public void applyDiscount(double discount, List<UUID> productIds) { //FIXME shouldnt the logic be in the service class and we just save here?
         ArrayList<Product> products = getProducts();
-        for (Product product : products) {
-            if (productIds.contains(product.getId())) {
-                double newPrice = product.getPrice() * (1 - (discount / 100));
-                product.setPrice(newPrice);
-            }
+
+        // Filter products that match the given IDs
+        List<Product> productsToUpdate = products.stream()
+                .filter(product -> productIds.contains(product.getId()))
+                .toList();
+
+        // If no matching products exist, throw 404
+        if (productsToUpdate.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No products found for given IDs");
         }
-        saveAll(products);
+
+        // Apply discount
+        for (Product product : productsToUpdate) {
+            double newPrice = product.getPrice() - (product.getPrice() * (discount / 100));
+            product.setPrice(newPrice);
+        }
+
+        saveAll(products); // Save updated products
     }
 
     public void deleteProductById(UUID productId) {
