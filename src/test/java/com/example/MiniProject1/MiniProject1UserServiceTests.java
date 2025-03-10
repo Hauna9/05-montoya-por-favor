@@ -468,7 +468,6 @@ public class MiniProject1UserServiceTests {
         assertTrue(retrievedCart.getProducts().isEmpty(), "Cart should be empty after calling emptyCart.");
     }
 
-
     @Test
     void testRemoveOrder_WhenOrderExists() {
         // Arrange: Create user with an order
@@ -482,14 +481,17 @@ public class MiniProject1UserServiceTests {
         // Act: Remove the order
         userService.removeOrderFromUser(user.getId(), order.getId());
 
-        // Assert: Order should be removed
+        // Assert: Order should be removed from user's orders
         User updatedUser = userRepository.getUserById(user.getId());
         assertNotNull(updatedUser, "User should still exist.");
         assertTrue(updatedUser.getOrders().isEmpty(), "User should have no orders after removal.");
 
         // Ensure the order does not exist in the order repository
-        assertNull(orderRepository.getOrderById(order.getId()), "Order should be removed from order repository.");
+        assertThrows(NoSuchElementException.class, () -> orderRepository.getOrderById(order.getId()),
+                "Retrieving a deleted order should throw NoSuchElementException.");
     }
+
+
 
     @Test
     void testRemoveOrder_WhenOrderDoesNotExist() {

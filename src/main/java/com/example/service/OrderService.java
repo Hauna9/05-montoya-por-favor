@@ -39,7 +39,7 @@ public class OrderService extends MainService<Order> {
         return order;
     }
 
-    public void deleteOrderById(UUID orderId) throws IllegalArgumentException{
+    public void deleteOrderById(UUID orderId){
         Order order = orderRepository.getOrderById(orderId);
         if(order != null){
             orderRepository.deleteOrderById(orderId);
