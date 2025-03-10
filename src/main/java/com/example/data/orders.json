@@ -1,1 +1,1 @@
-[]
+[{"id":"b83e02af-f7f9-4625-88d9-21a7d6703050","userId":"6f028cfa-8318-4bfa-aadc-2ea7000595b5","totalPrice":25.0,"products":[{"id":"b1fba6a4-fbeb-4b87-aa20-6445c86c39db","name":"Product A","price":25.0}]},{"id":"3946dcfb-49a4-4065-a75d-56610fa15292","userId":"d3e74135-c18d-4f18-b0a1-594afd26b122","totalPrice":10.0,"products":[{"id":"e9055b33-f3ca-4393-8059-8f5d8d0e4fec","name":"Test Product","price":10.0}]}]

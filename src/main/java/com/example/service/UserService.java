@@ -143,11 +143,17 @@ public class UserService extends MainService<User>  {
             orderRepository.deleteOrderById(order.getId());
         }
 
-        // Check if user has a cart and delete it
-        Cart userCart = cartRepository.getCartByUserId(userId);
-        if (userCart != null) {  // ✅ Use a null check if it doesn't return Optional<Cart>
+//        // Check if user has a cart and delete it
+        try {
+            Cart userCart = cartRepository.getCartByUserId(userId);
             cartRepository.deleteCartById(userCart.getId());
+        } catch (NoSuchElementException e) {
+            // Cart does not exist, nothing to delete
         }
+//        Cart userCart = cartRepository.getCartByUserId(userId);
+//        if (userCart != null) {  // ✅ Use a null check if it doesn't return Optional<Cart>
+//            cartRepository.deleteCartById(userCart.getId());
+//        }
 
         // Now delete the user
         userRepository.deleteUserById(userId);
@@ -166,23 +172,42 @@ public class UserService extends MainService<User>  {
         Product product = productRepository.getProductById(productId);
         System.out.println("Product: using getProductById " + product.getName());
         // creates a cart incase it does not exist
-        if(cartRepository.getCartByUserId(userId) == null){
-            System.out.println("cart not found");
-            List <Product> products = new ArrayList<>();
-            products.add(product);
-            Cart cart = new Cart(userId,products);
-            System.out.println("cart created successfully");
-            cartRepository.addCart(cart);
-            System.out.println("cart added to cartrepo successfully");
-        }
-        else {
+//        if(cartRepository.getCartByUserId(userId) == null){
+//            System.out.println("cart not found");
+//            List <Product> products = new ArrayList<>();
+//            products.add(product);
+//            Cart cart = new Cart(userId,products);
+//            System.out.println("cart created successfully");
+//            cartRepository.addCart(cart);
+//            System.out.println("cart added to cartrepo successfully");
+//        }
+        //creates cart incase it doesnt exist
+        try {
             Cart cart = cartRepository.getCartByUserId(userId);
             System.out.println("Cart: " + cart);
             System.out.println("cart id using getId:" + cart.getId());
             System.out.println("Cart products before adding" + cart.getProducts().get(0).getName()); // should be empty
             cartRepository.addProductToCart(cart.getId(), product); //FIXME cart or cartid
             System.out.println("Cart products after adding" + cart.getProducts().get(0).getName()); // should be Test Product
+            return "Product added to cart";
+
+        } catch (NoSuchElementException e) {
+            System.out.println("cart not found");
+            List<Product> products = new ArrayList<>();
+            products.add(product);
+            Cart cart = new Cart(userId, products);
+            System.out.println("cart created successfully");
+            cartRepository.addCart(cart);
+            System.out.println("cart added to cartrepo successfully");
         }
+        //incase cart exists
+            Cart cart = cartRepository.getCartByUserId(userId);
+            System.out.println("Cart: " + cart);
+            System.out.println("cart id using getId:" + cart.getId());
+            System.out.println("Cart products before adding" + cart.getProducts().get(0).getName()); // should be empty
+            cartRepository.addProductToCart(cart.getId(), product); //FIXME cart or cartid
+            System.out.println("Cart products after adding" + cart.getProducts().get(0).getName()); // should be Test Product
+
 
 
 
@@ -204,13 +229,22 @@ public class UserService extends MainService<User>  {
         Product product = productRepository.getProductById(productId);
         System.out.println("Product: using getProductById " + product.getName());
         // check if cart exists
-        if(cartRepository.getCartByUserId(userId) == null) {
-            System.out.println("cart doesnt exist ");
-            List<Product> products = new ArrayList<>();
-            Cart cart = new Cart(userId, products);
+
+        try {
+            Cart cart = cartRepository.getCartByUserId(userId);
             System.out.println("cart created successfully");
+        } catch (NoSuchElementException e) {
+            System.out.println("cart doesn't exist");
             return "Cart is empty";
         }
+
+//        if(cartRepository.getCartByUserId(userId) == null) {
+//            System.out.println("cart doesnt exist ");
+//            List<Product> products = new ArrayList<>();
+//            Cart cart = new Cart(userId, products);
+//            System.out.println("cart created successfully");
+//            return "Cart is empty";
+//        }
         // check if empty
         Cart cart = cartRepository.getCartByUserId(userId);
         if(cart.getProducts().isEmpty()){
