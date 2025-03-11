@@ -50,7 +50,7 @@ public class CartRepository extends MainRepository<Cart> {
                 .filter(cart -> cart.getUserId().equals(userId))
                 .findFirst()
                 .orElseThrow(() -> new NoSuchElementException("No cart found for user"));
-    } //FIXME should we throw this here or what?
+    }
 
 
     // 6.4.2.5 Add Product to Cart
@@ -74,7 +74,7 @@ public class CartRepository extends MainRepository<Cart> {
 
     // 6.4.2.6 Delete Product from Cart
     public void deleteProductFromCart(UUID cartId, Product product) {
-        ArrayList<Cart> carts = findAll(); //FIXME shouldnt it be List?
+        ArrayList<Cart> carts = findAll();
         for (Cart cart : carts) {
             if (cart.getId().equals(cartId)) {
                 cart.getProducts().removeIf(p -> p.getId().equals(product.getId()));
@@ -84,20 +84,6 @@ public class CartRepository extends MainRepository<Cart> {
         }
         throw new NoSuchElementException("Cart not found with ID: " + cartId);
     }
-    //UPDATE try this? to return http 200
-
-//    public ResponseEntity<Void> deleteProductFromCart(UUID cartId, Product product) {
-//        ArrayList<Cart> carts = findAll();
-//        for (Cart cart : carts) {
-//            if (cart.getId().equals(cartId)) {
-//                cart.getProducts().removeIf(p -> p.getId().equals(product.getId()));
-//                saveAll(carts);
-//                return new ResponseEntity<>(HttpStatus.OK);
-//            }
-//        }
-//        return new ResponseEntity<>(HttpStatus.OK);
-//    }
-
 
     // 6.4.2.7 Delete the Cart (Using Loop)
     public void deleteCartById(UUID cartId) {

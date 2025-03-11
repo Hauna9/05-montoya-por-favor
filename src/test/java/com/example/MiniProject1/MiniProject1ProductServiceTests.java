@@ -255,7 +255,8 @@ class MiniProject1ProductServiceTests {
         Product savedProduct = productService.addProduct(product);
 
         // Act: Apply a 10% discount
-        List<UUID> productIds = List.of(savedProduct.getId());
+        ArrayList<UUID> productIds = new ArrayList<>();
+        productIds.add(savedProduct.getId());
         productService.applyDiscount(10.0, productIds);
 
         // Assert: Verify price reduction
@@ -273,7 +274,10 @@ class MiniProject1ProductServiceTests {
         Product savedProductB = productService.addProduct(productB);
 
         // Act: Apply a 20% discount to both products
-        List<UUID> productIds = List.of(savedProductA.getId(), savedProductB.getId());
+        ArrayList<UUID> productIds = new ArrayList<>();
+        productIds.add(savedProductA.getId());
+        productIds.add(savedProductB.getId());
+        //List.of(savedProductA.getId(), savedProductB.getId());
         productService.applyDiscount(20.0, productIds);
 
         // Assert: Verify correct discount application
@@ -287,7 +291,9 @@ class MiniProject1ProductServiceTests {
     @Test
     void testApplyDiscount_NoExistingProducts() {
         // Arrange: Create a list of non-existent product IDs
-        List<UUID> nonExistentProductIds = List.of(UUID.randomUUID(), UUID.randomUUID());
+        ArrayList<UUID> nonExistentProductIds = new ArrayList<>();
+        nonExistentProductIds.add(UUID.randomUUID());
+        nonExistentProductIds.add(UUID.randomUUID());
 
         // Act & Assert: Expect an exception
         Exception exception = assertThrows(ResponseStatusException.class, () ->

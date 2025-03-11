@@ -32,8 +32,8 @@ public class CartService extends MainService<Cart> {
 
     // 7.4.2.2 Get All Carts
     public ArrayList<Cart> getCarts() {
-        return cartRepository.getCarts();
-    } //FIXME call getAll from MainService?
+        return getAll();
+    }
 
     // 7.4.2.3 Get a Specific Cart
     public Cart getCartById(UUID cartId) {
@@ -50,8 +50,6 @@ public class CartService extends MainService<Cart> {
         if (cart == null) { // create cart
             cart = new Cart(userId, new ArrayList<>());
             cartRepository.addCart(cart);
-            cartRepository.save(cart);
-
         }
 
         return cart;

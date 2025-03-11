@@ -30,7 +30,7 @@ public class ProductService extends MainService<Product> {
     }
 
     public ArrayList<Product> getProducts() {
-        return productRepository.getProducts(); //FIXME call getAll from MainService?
+        return getAll();
     }
 
     public Product getProductById(UUID productId) {
@@ -51,7 +51,7 @@ public class ProductService extends MainService<Product> {
         return productRepository.updateProduct(productId, newName, newPrice);
     }
 
-    public void applyDiscount(double discount, List<UUID> productIds) {
+    public void applyDiscount(double discount, ArrayList<UUID> productIds) {
         productRepository.applyDiscount(discount, productIds);
     }
 

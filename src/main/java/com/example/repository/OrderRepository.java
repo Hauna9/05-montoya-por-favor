@@ -31,17 +31,6 @@ public class OrderRepository extends MainRepository<Order> {
         return findAll();
     }
 
-//    public Order getOrderById(UUID orderId){
-//        ArrayList<Order> orders = getOrders();
-//        for (Order order : orders) {
-//            if(order.getId().equals(orderId)){
-//                return order;
-//            }
-//        }
-//        return null;
-//    }
-
-
     public Order getOrderById(UUID orderId) {
         return getOrders().stream()
                 .filter(order -> order.getId().equals(orderId))

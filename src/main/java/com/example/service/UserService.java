@@ -16,20 +16,21 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.*;
 
 @Service
+@SuppressWarnings("rawtypes")
 public class UserService extends MainService<User>  {
     UserRepository userRepository;
     @Autowired
     private OrderService orderService;
+    @Autowired
+    private ProductService productService;
+    @Autowired
+    private CartService cartService;
 
     @Autowired
     public UserService(UserRepository repository) {
         super(repository);
         this.userRepository = repository;
     }
-
-    @Autowired
-    OrderRepository orderRepository;
-
 
     public User addUser(User user){
         return userRepository.addUser(user);
@@ -41,11 +42,6 @@ public class UserService extends MainService<User>  {
 
     public User getUserById(UUID userId){
        return  userRepository.getUserById(userId);
-//        //FIXME i uncommented the below code so should i comment?
-//        if(user == null){
-//            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
-//        }
-//        return user;
     }
 
     public List<Order> getOrdersByUserId(UUID userId) {
@@ -56,20 +52,15 @@ public class UserService extends MainService<User>  {
         }
     }
 
-
-    @Autowired
-    CartService cartService;
-    //FIXME make this a cart service not cart repo
-
     public void addOrderToUser(UUID userId) {
         // Check if user exists
-        User user = getUserById(userId);
+        User user = userRepository.getUserById(userId);
         if (user == null) {
             throw new NoSuchElementException("User not found");
         }
 
         // Ensure the user has a cart
-        Cart cart = cartRepository.getCartByUserId(userId);
+        Cart cart = cartService.getCartByUserId(userId);
         if (cart == null || cart.getProducts().isEmpty()) {
             throw new IllegalStateException("User's cart is empty or does not exist");
         }
@@ -85,7 +76,7 @@ public class UserService extends MainService<User>  {
         userRepository.addOrderToUser(userId, newOrder);
 
         // Empty the cart after order is placed
-        cartRepository.getCartByUserId(userId).getProducts().clear();
+        cartService.getCartByUserId(userId).getProducts().clear();
     }
 
 
@@ -107,7 +98,7 @@ public class UserService extends MainService<User>  {
 
 
         // Fetch it again after saving to check if it is really updated
-        Cart updatedCart = cartRepository.getCartByUserId(userId);
+        Cart updatedCart = cartService.getCartByUserId(userId);
 
         // Debugging prints
         System.out.println("Cart products after emptying: " + updatedCart.getProducts().size()); // Should be 0
@@ -140,54 +131,35 @@ public class UserService extends MainService<User>  {
         // Delete user's orders
         List<Order> userOrders = userRepository.getOrdersByUserId(userId);
         for (Order order : userOrders) {
-            orderRepository.deleteOrderById(order.getId());
+            orderService.deleteOrderById(order.getId());
         }
 
 //        // Check if user has a cart and delete it
         try {
-            Cart userCart = cartRepository.getCartByUserId(userId);
-            cartRepository.deleteCartById(userCart.getId());
+            Cart userCart = cartService.getCartByUserId(userId);
+            cartService.deleteCartById(userCart.getId());
         } catch (NoSuchElementException e) {
             // Cart does not exist, nothing to delete
         }
-//        Cart userCart = cartRepository.getCartByUserId(userId);
-//        if (userCart != null) {  // ✅ Use a null check if it doesn't return Optional<Cart>
-//            cartRepository.deleteCartById(userCart.getId());
-//        }
 
         // Now delete the user
         userRepository.deleteUserById(userId);
     }
 
 
-    //FIXME make this a service
-    @Autowired
-    ProductRepository productRepository;
-    @Autowired
-    CartRepository cartRepository;
     public String addProductToCart(UUID userId, UUID productId) {
         // Fetch user and product from the database
         User user = userRepository.getUserById(userId);
         System.out.println("User name: " + user.getName());  // should be Test User
-        Product product = productRepository.getProductById(productId);
+        Product product = productService.getProductById(productId);
         System.out.println("Product: using getProductById " + product.getName());
-        // creates a cart incase it does not exist
-//        if(cartRepository.getCartByUserId(userId) == null){
-//            System.out.println("cart not found");
-//            List <Product> products = new ArrayList<>();
-//            products.add(product);
-//            Cart cart = new Cart(userId,products);
-//            System.out.println("cart created successfully");
-//            cartRepository.addCart(cart);
-//            System.out.println("cart added to cartrepo successfully");
-//        }
-        //creates cart incase it doesnt exist
+        //creates cart in case it doesnt exist
         try {
-            Cart cart = cartRepository.getCartByUserId(userId);
+            Cart cart = cartService.getCartByUserId(userId);
             System.out.println("Cart: " + cart);
             System.out.println("cart id using getId:" + cart.getId());
             System.out.println("Cart products before adding" + cart.getProducts().get(0).getName()); // should be empty
-            cartRepository.addProductToCart(cart.getId(), product); //FIXME cart or cartid
+            cartService.addProductToCart(cart.getId(), product);
             System.out.println("Cart products after adding" + cart.getProducts().get(0).getName()); // should be Test Product
             return "Product added to cart";
 
@@ -197,15 +169,15 @@ public class UserService extends MainService<User>  {
             products.add(product);
             Cart cart = new Cart(userId, products);
             System.out.println("cart created successfully");
-            cartRepository.addCart(cart);
+            cartService.addCart(cart);
             System.out.println("cart added to cartrepo successfully");
         }
         //incase cart exists
-            Cart cart = cartRepository.getCartByUserId(userId);
+            Cart cart = cartService.getCartByUserId(userId);
             System.out.println("Cart: " + cart);
             System.out.println("cart id using getId:" + cart.getId());
             System.out.println("Cart products before adding" + cart.getProducts().get(0).getName()); // should be empty
-            cartRepository.addProductToCart(cart.getId(), product); //FIXME cart or cartid
+            cartService.addProductToCart(cart.getId(), product);
             System.out.println("Cart products after adding" + cart.getProducts().get(0).getName()); // should be Test Product
 
 
@@ -214,7 +186,6 @@ public class UserService extends MainService<User>  {
         return "Product added to cart";
     }
 
-    //FIXME mention cartservice not cartrepository
 
     public String deleteProductFromCart(UUID userId, UUID productId) {
         // check cart exists
@@ -226,27 +197,20 @@ public class UserService extends MainService<User>  {
         User user = userRepository.getUserById(userId);
         System.out.println("User name: " + user.getName());  // should be Test User
         // Fetch product from the product repo
-        Product product = productRepository.getProductById(productId);
+        Product product = productService.getProductById(productId);
         System.out.println("Product: using getProductById " + product.getName());
         // check if cart exists
 
         try {
-            Cart cart = cartRepository.getCartByUserId(userId);
+            Cart cart = cartService.getCartByUserId(userId);
             System.out.println("cart created successfully");
         } catch (NoSuchElementException e) {
             System.out.println("cart doesn't exist");
             return "Cart is empty";
         }
 
-//        if(cartRepository.getCartByUserId(userId) == null) {
-//            System.out.println("cart doesnt exist ");
-//            List<Product> products = new ArrayList<>();
-//            Cart cart = new Cart(userId, products);
-//            System.out.println("cart created successfully");
-//            return "Cart is empty";
-//        }
         // check if empty
-        Cart cart = cartRepository.getCartByUserId(userId);
+        Cart cart = cartService.getCartByUserId(userId);
         if(cart.getProducts().isEmpty()){
             System.out.println("cart is exists but empty");
             return "Cart is empty";
@@ -258,7 +222,7 @@ public class UserService extends MainService<User>  {
         for (Product p : products){
             if(p.getId().equals(product.getId())){
                 System.out.println("product exists in cart");
-                cartRepository.deleteProductFromCart(cart.getId(), product);
+                cartService.deleteProductFromCart(cart.getId(), product);
                 System.out.println("product deleted from cart");
                 return "Product deleted from cart";
             }

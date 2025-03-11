@@ -27,9 +27,7 @@ public class ProductRepository extends MainRepository<Product> {
     }
 
     public Product addProduct(Product product) {
-        ArrayList<Product> products = getProducts();
-        products.add(product);
-        saveAll(products);
+        save(product);
         return product;
     }
 
@@ -60,7 +58,7 @@ public class ProductRepository extends MainRepository<Product> {
         return null;
     }
 
-    public void applyDiscount(double discount, List<UUID> productIds) { //FIXME shouldnt the logic be in the service class and we just save here?
+    public void applyDiscount(double discount, ArrayList<UUID> productIds) {
         ArrayList<Product> products = getProducts();
 
         // Filter products that match the given IDs

@@ -24,7 +24,6 @@ public class Cart {
     public Cart(UUID userId, List<Product> products) {
         this.userId = userId;
         this.products = products;
-        //FIXME In all --> make the id random
         this.id = UUID.randomUUID();
     }
 
