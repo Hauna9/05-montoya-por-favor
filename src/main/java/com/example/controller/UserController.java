@@ -1,10 +1,16 @@
 package com.example.controller;
 
+import com.example.model.Cart;
 import com.example.model.Order;
 import com.example.model.User;
+import com.example.repository.ProductRepository;
+import com.example.service.CartService;
 import com.example.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,15 +26,18 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PostMapping("/")
-    public User addUser(@RequestBody User user) {
-        return userService.addUser(user);
-    }
+
 
     @GetMapping("/")
     public ArrayList<User> getUsers(){
         return userService.getUsers();
     }
+
+    @PostMapping("/")
+    public User addUser(@RequestBody User user) {
+        return userService.addUser(user);
+    }
+
 
     @GetMapping("/{userId}")
     public User getUserById(@PathVariable UUID userId){
@@ -37,31 +46,54 @@ public class UserController {
 
     @GetMapping("/{userId}/orders")
     public List<Order> getOrdersByUserId(@PathVariable UUID userId){
-        return userService.getOrdersByUserId(userId);
+        //check user exists
+        if(userService.getUserById(userId) != null){
+            return userService.getOrdersByUserId(userId);
+        }
+         List<Order> orders= new ArrayList<>();
+        return orders;
     }
 
     @PostMapping("/{userId}/checkout")
     public String addOrderToUser(@PathVariable UUID userId){
         userService.addOrderToUser(userId);
-        return "Order added to user";
+        return "Order added successfully";
     }
 
     @PostMapping("/{userId}/removeOrder")
     public String removeOrderFromUser(@PathVariable UUID userId, @RequestParam UUID orderId){
         userService.removeOrderFromUser(userId, orderId);
-        return "Order removed from user";
+        return "Order removed successfully";
     }
 
     @DeleteMapping("/{userId}/emptyCart")
     public String emptyCart(@PathVariable UUID userId){
         userService.emptyCart(userId);
-        return "Cart emptied";
+        return "Cart emptied successfully";
     }
 
     @DeleteMapping("/delete/{userId}")
     public String deleteUserById(@PathVariable UUID userId){
-        userService.deleteUserById(userId);
-        return "User deleted";
+
+if(userService.getUserById(userId) != null) {
+            userService.deleteUserById(userId);
+            return "User deleted successfully";
+        } else {
+    return "User not found";  // Change 404 to 200 with a response message
+        }
+
+    }
+
+
+    @PutMapping("/addProductToCart")
+    public String addProductToCart(@RequestParam UUID userId, @RequestParam UUID productId)
+    {
+        return userService.addProductToCart(userId, productId);
+    }
+    @PutMapping("/deleteProductFromCart")
+    public String deleteProductFromCart(@RequestParam UUID userId, @RequestParam UUID productId)
+    {
+        return userService.deleteProductFromCart(userId, productId);
     }
 
 

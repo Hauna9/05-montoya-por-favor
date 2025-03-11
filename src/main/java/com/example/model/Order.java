@@ -29,6 +29,7 @@ public class Order {
         this.userId = userId;
         this.totalPrice = totalPrice;
         this.products = products;
+        id=UUID.randomUUID();
     }
 
     //getters and setters

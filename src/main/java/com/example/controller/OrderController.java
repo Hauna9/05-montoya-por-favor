@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @RestController
@@ -33,9 +34,14 @@ public class OrderController {
         return orderService.getOrders();
     }
 
-    @DeleteMapping("/delete/{orderId}")
-    public String deleteOrderById(@PathVariable UUID orderId){
-        orderService.deleteOrderById(orderId);
-        return "Order deleted successfully";
+    @DeleteMapping("/delete/{id}")
+    public String deleteOrderById(@PathVariable UUID id) {
+        try {
+            orderService.deleteOrderById(id);
+            return "Order deleted successfully";
+        } catch (NoSuchElementException e) {
+            return "Order not found";  // ✅ Ensure method returns a string
+        }
     }
+
 }

@@ -1,5 +1,6 @@
 package com.example.repository;
 
+import com.example.model.Cart;
 import com.example.model.Order;
 import org.springframework.stereotype.Repository;
 
@@ -14,7 +15,7 @@ public class OrderRepository extends MainRepository<Order> {
 
     @Override
     protected String getDataPath() {
-        return "src/main/java/com.example/data/orders.json";
+        return "src/main/java/com/example/data/orders.json";
     }
 
     @Override
@@ -30,15 +31,25 @@ public class OrderRepository extends MainRepository<Order> {
         return findAll();
     }
 
-    public Order getOrderById(UUID orderId){
-        ArrayList<Order> orders = getOrders();
-        for (Order order : orders) {
-            if(order.getId().equals(orderId)){
-                return order;
-            }
-        }
-        throw new NoSuchElementException("Order with ID " + orderId + " not found.");
+//    public Order getOrderById(UUID orderId){
+//        ArrayList<Order> orders = getOrders();
+//        for (Order order : orders) {
+//            if(order.getId().equals(orderId)){
+//                return order;
+//            }
+//        }
+//        return null;
+//    }
+
+
+    public Order getOrderById(UUID orderId) {
+        return getOrders().stream()
+                .filter(order -> order.getId().equals(orderId))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Order not found with ID: " + orderId));
     }
+
+
 
     public void deleteOrderById(UUID orderId){
         ArrayList<Order> orders = getOrders();

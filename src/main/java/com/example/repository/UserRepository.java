@@ -3,12 +3,11 @@ package com.example.repository;
 import com.example.model.Order;
 import com.example.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Repository;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @Repository
@@ -22,9 +21,8 @@ public class UserRepository extends MainRepository<User>{
     }
     @Override
     protected String getDataPath() {
-        return "src/main/java/com.example/data/users.json";
+        return "src/main/java/com/example/data/users.json";
     }
-
     @Override
     protected Class<User[]> getArrayType() {
         return User[].class;
@@ -35,36 +33,36 @@ public class UserRepository extends MainRepository<User>{
     }
 
     public User getUserById(UUID userId){
-        ArrayList<User> users = getUsers();
-        for (User user : users) {
-            if(user.getId().equals(userId)){
-                return user;
-            }
-        }
-        return null;
+            return getUsers().stream()
+                    .filter(user -> user.getId().equals(userId))
+                    .findFirst()
+                    .orElse(null);  // Avoid throwing an exception if the user is not found
+
+
     }
 
     public User addUser(User user){
-        user.setId(UUID.randomUUID());
+       // user.setId(UUID.randomUUID());
         save(user);
         return user;
     }
 
-    public List<Order> getOrdersByUserId(UUID userId){
-        ArrayList<Order> orders = new ArrayList<>();
-        for (Order order : orderRepository.getOrders()) {
-            if(order.getUserId().equals(userId)){
-                orders.add(order);
-            }
+    public List<Order> getOrdersByUserId(UUID userId) {
+        User user = getUserById(userId);
+
+        // Handle the case where the user doesn't exist
+        if (user == null) {
+            throw new NoSuchElementException("User not found with ID: " + userId);
         }
-        return orders;
+
+        return user.getOrders();
     }
 
     public void addOrderToUser(UUID userId, Order order){
         User user = getUserById(userId);
         order.setId(UUID.randomUUID());
         order.setUserId(userId);
-        orderRepository.addOrder(order);
+        orderRepository.addOrder(order); //FIXME add stuff to repo overall?
         List<Order> userOrders = user.getOrders();
         userOrders.add(order);
         user.setOrders(userOrders);
@@ -90,7 +88,9 @@ public class UserRepository extends MainRepository<User>{
 
     public void deleteUserById(UUID userId){
         ArrayList<User> users = getUsers();
+
         users.removeIf(user -> user.getId().equals(userId));
+
         saveAll(users);
     }
 
