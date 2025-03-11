@@ -165,4 +165,22 @@ public class MiniProject1OrderServiceTests {
                 "Exception message should indicate that the order was not found.");
     }
 
+    @Test
+    void testDeleteOrderById_WhenOrderHasProducts() {
+        // Arrange: Create an order with products
+        UUID userId = UUID.randomUUID();
+        List<Product> products = List.of(new Product(UUID.randomUUID(), "Product A", 50.0));
+        Order order = new Order(UUID.randomUUID(), userId, 50.0, products);
+        orderService.addOrder(order);
+
+        // Act: Delete the order
+        orderService.deleteOrderById(order.getId());
+
+        // Assert: Order should be deleted
+        Exception exception = assertThrows(NoSuchElementException.class, () -> orderRepository.getOrderById(order.getId()));
+        assertTrue(exception.getMessage().contains("Order not found"), "Deleted order should not exist.");
+    }
+
+
+
 }
