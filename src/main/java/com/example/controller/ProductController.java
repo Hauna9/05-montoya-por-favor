@@ -48,7 +48,7 @@ public class ProductController {
     }
 
     @PutMapping("/applyDiscount")
-    public String applyDiscount(@RequestParam double discount, @RequestBody List<UUID> productIds) {
+    public String applyDiscount(@RequestParam double discount, @RequestBody ArrayList<UUID> productIds) {
         productService.applyDiscount(discount, productIds);
         return "Discount applied successfully";
     }

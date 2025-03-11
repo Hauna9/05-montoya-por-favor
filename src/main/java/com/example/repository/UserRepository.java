@@ -42,7 +42,6 @@ public class UserRepository extends MainRepository<User>{
     }
 
     public User addUser(User user){
-       // user.setId(UUID.randomUUID());
         save(user);
         return user;
     }
@@ -62,7 +61,7 @@ public class UserRepository extends MainRepository<User>{
         User user = getUserById(userId);
         order.setId(UUID.randomUUID());
         order.setUserId(userId);
-        orderRepository.addOrder(order); //FIXME add stuff to repo overall?
+        orderRepository.addOrder(order);
         List<Order> userOrders = user.getOrders();
         userOrders.add(order);
         user.setOrders(userOrders);

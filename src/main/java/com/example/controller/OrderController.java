@@ -40,7 +40,7 @@ public class OrderController {
             orderService.deleteOrderById(id);
             return "Order deleted successfully";
         } catch (NoSuchElementException e) {
-            return "Order not found";  // ✅ Ensure method returns a string
+            return "Order not found";
         }
     }
 

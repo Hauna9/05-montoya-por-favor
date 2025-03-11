@@ -50,7 +50,7 @@ public class UserController {
         if(userService.getUserById(userId) != null){
             return userService.getOrdersByUserId(userId);
         }
-         List<Order> orders= new ArrayList<>();
+        List<Order> orders= new ArrayList<>();
         return orders;
     }
 
@@ -75,11 +75,11 @@ public class UserController {
     @DeleteMapping("/delete/{userId}")
     public String deleteUserById(@PathVariable UUID userId){
 
-if(userService.getUserById(userId) != null) {
+        if(userService.getUserById(userId) != null) {
             userService.deleteUserById(userId);
             return "User deleted successfully";
         } else {
-    return "User not found";  // Change 404 to 200 with a response message
+            return "User not found";
         }
 
     }

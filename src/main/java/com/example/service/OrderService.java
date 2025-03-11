@@ -28,22 +28,23 @@ public class OrderService extends MainService<Order> {
     }
 
     public ArrayList<Order> getOrders(){
-        return orderRepository.getOrders(); //FIXME call getAll from MainService?
+        return getAll();
     }
 
     public Order getOrderById(UUID orderId){
         Order order = orderRepository.getOrderById(orderId);
-//        if(order == null){
-//            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
-//        }
+        if(order == null){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+        }
         return order;
     }
 
-    public void deleteOrderById(UUID orderId){
+    public void deleteOrderById(UUID orderId) throws IllegalArgumentException{
         Order order = orderRepository.getOrderById(orderId);
-        if(order != null){
-            orderRepository.deleteOrderById(orderId);
+        if (order == null) {
+            throw new IllegalArgumentException("Order with ID " + orderId + " not found.");
         }
+        orderRepository.deleteOrderById(orderId);
 
     }
 
